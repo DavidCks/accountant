@@ -1,6 +1,6 @@
 import { SB } from "../_accountant-supabase_/client";
 
-import { currencies, CurrencyCode } from "../__types__/Currencies";
+import { currencies, CurrencyCode } from "../__types__/generated/Currencies";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import {

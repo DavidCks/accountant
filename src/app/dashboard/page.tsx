@@ -169,6 +169,10 @@ const PageImpl = () => {
               transactionsMutation.isSuccess &&
               !transactionsMutation.data.error ? (
                 <>
+                  <div className="flex justify-between">
+                    <div></div>
+                    <div></div>
+                  </div>
                   <Dialog>
                     <DialogTrigger className="mx-6" asChild>
                       <Button variant="outline">Add Transaction</Button>

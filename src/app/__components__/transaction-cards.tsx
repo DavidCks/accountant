@@ -24,7 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { currencies } from "@/app/__types__/Currencies";
+import { currencies } from "@/app/__types__/generated/Currencies";
 import { SelectSearch } from "@/components/select-search";
 import { SB } from "../_accountant-supabase_/client";
 import {

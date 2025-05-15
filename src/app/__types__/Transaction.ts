@@ -1,4 +1,4 @@
-import { CurrencyCode } from "./Currencies";
+import { CurrencyCode } from "./generated/Currencies";
 export type Transaction = {
   id: string; // UUID
   message: string | null; // Description of the transaction
