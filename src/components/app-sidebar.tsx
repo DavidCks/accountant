@@ -1,0 +1,137 @@
+"use client";
+import {
+  Icon,
+  IconCamera,
+  IconChartBar,
+  IconDashboard,
+  IconDatabase,
+  IconFileAi,
+  IconFileDescription,
+  IconFileWord,
+  IconFolder,
+  IconHelp,
+  IconInnerShadowTop,
+  IconListDetails,
+  IconReport,
+  IconSearch,
+  IconSettings,
+  IconUsers,
+} from "@tabler/icons-react";
+
+import { NavDocuments } from "@/components/nav-documents";
+import { NavMain } from "@/components/nav-main";
+import { NavSecondary } from "@/components/nav-secondary";
+import { NavUser } from "@/components/nav-user";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+} from "@/components/ui/sidebar";
+import { ReactNode, useEffect, useState } from "react";
+import { SupabaseClient } from "@supabase/supabase-js";
+import { Supabase } from "@/lib/__supabase__/supabase";
+import { usePathname } from "next/navigation";
+
+const data = {
+  navMain: [
+    {
+      title: "Transactions",
+      url: "/dashboard",
+      icon: IconListDetails,
+    },
+  ],
+  navSecondary: [
+    // {
+    //   title: "Settings",
+    //   url: "#",
+    //   icon: IconSettings,
+    // },
+  ],
+  documents: [
+    // {
+    //   name: "Data Library",
+    //   url: "#",
+    //   icon: IconDatabase,
+    // },
+  ],
+};
+
+export type AppSidebarProps = React.ComponentProps<typeof Sidebar> & {
+  SB: typeof Supabase;
+  navMain: {
+    title: string;
+    url: string;
+    icon?: Icon;
+  }[];
+  navSecondary?: {
+    title: string;
+    url: string;
+    icon?: Icon;
+  }[];
+  documents?: {
+    name: string;
+    url: string;
+    icon?: Icon;
+  }[];
+  title: ReactNode;
+};
+
+export function AppSidebar({
+  SB,
+  navMain,
+  navSecondary,
+  documents,
+  title,
+  ...props
+}: AppSidebarProps) {
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const pathname = usePathname();
+  const [user, setUser] = useState<{
+    email: string;
+  } | null>(null);
+
+  useEffect(() => {
+    // Get the current user from Supabase
+    SB.getCurrentUser().then((user) => {
+      if (user.error) {
+        setErrorMessage(user.error.message);
+      } else {
+        setUser({
+          email: user.value.email!,
+        });
+      }
+    });
+  }, []);
+
+  return (
+    <Sidebar collapsible="offcanvas" {...props}>
+      <SidebarHeader>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              asChild
+              className="data-[slot=sidebar-menu-button]:!p-1.5"
+            >
+              <a href="#">
+                <IconInnerShadowTop className="!size-5" />
+                <span className="text-base font-semibold">{title}</span>
+              </a>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarHeader>
+      <SidebarContent>
+        <NavMain items={navMain} activeUrl={pathname} />
+        {documents && <NavDocuments items={documents} />}
+        {navSecondary && (
+          <NavSecondary items={navSecondary} className="mt-auto" />
+        )}
+      </SidebarContent>
+      <SidebarFooter>{user && <NavUser SB={SB} user={user} />}</SidebarFooter>
+    </Sidebar>
+  );
+}
