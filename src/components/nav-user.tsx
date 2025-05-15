@@ -1,18 +1,11 @@
 "use client";
 
-import {
-  IconCreditCard,
-  IconDotsVertical,
-  IconLogout,
-  IconNotification,
-  IconUserCircle,
-} from "@tabler/icons-react";
+import { IconDotsVertical } from "@tabler/icons-react";
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -25,7 +18,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { Supabase } from "@/lib/__supabase__/supabase";
-import { Button } from "./ui/button";
+
 import { useRouter } from "next/navigation";
 
 export function NavUser({

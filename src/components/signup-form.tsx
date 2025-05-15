@@ -16,7 +16,7 @@ import {
 } from "./signup-form-controller";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { FaCheck, FaExclamation, FaSpinner } from "react-icons/fa";
+import { FaSpinner } from "react-icons/fa";
 import { ErrorCard } from "./error-card";
 import { SuccessCard } from "./success-card";
 

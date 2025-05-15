@@ -1,42 +1,20 @@
 "use client";
 import { AppSidebar } from "@/components/app-sidebar";
-import { ChartAreaInteractive } from "@/components/chart-area-interactive";
-import { DataTable } from "@/components/data-table";
 import { TransactionCards } from "@/app/__components__/transaction-cards";
 import { SiteHeader } from "@/components/site-header";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import {
-  useQuery,
   useMutation,
-  useQueryClient,
   QueryClient,
   QueryClientProvider,
 } from "@tanstack/react-query";
 import { SB } from "../_accountant-supabase_/client";
-import { useEffect, useRef, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { currencies, CurrencyCode } from "../__types__/Currencies";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
+import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Textarea } from "@/components/ui/textarea";
-import { SelectSearch } from "@/components/select-search";
 import AddTransactionForm from "../__components__/add-transaction-form";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { ConfirmMessage } from "@/components/confirm-message";
-import {
-  OnLoadCallbackType,
-  OnLoadReturnType,
-} from "@/components/confirm-message-controller";
+import { OnLoadReturnType } from "@/components/confirm-message-controller";
 import { IconListDetails } from "@tabler/icons-react";
 import { usePathname } from "next/navigation";
 import { DialogTitle } from "@radix-ui/react-dialog";
@@ -200,7 +178,7 @@ const PageImpl = () => {
                     </DialogTitle>
                     <DialogContent className="sm:max-w-[425px]">
                       <AddTransactionForm
-                        onSubmit={async (data) => {
+                        onSubmit={async () => {
                           setLoading(true);
                         }}
                         onSubmitted={() => {

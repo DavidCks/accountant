@@ -1,4 +1,3 @@
-import { Link } from "lucide-react";
 import { ReactNode } from "react";
 import { toast as soonerToast } from "sonner";
 import { SuccessCard } from "./success-card";

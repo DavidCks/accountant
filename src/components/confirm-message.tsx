@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ReactNode, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { FaCheck, FaExclamation, FaSpinner } from "react-icons/fa";
+import { FaSpinner } from "react-icons/fa";
 import {
   OnLoadCallbackType,
   ConfirmMessageController,

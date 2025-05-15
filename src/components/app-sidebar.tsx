@@ -1,22 +1,5 @@
 "use client";
-import {
-  Icon,
-  IconCamera,
-  IconChartBar,
-  IconDashboard,
-  IconDatabase,
-  IconFileAi,
-  IconFileDescription,
-  IconFileWord,
-  IconFolder,
-  IconHelp,
-  IconInnerShadowTop,
-  IconListDetails,
-  IconReport,
-  IconSearch,
-  IconSettings,
-  IconUsers,
-} from "@tabler/icons-react";
+import { Icon, IconInnerShadowTop } from "@tabler/icons-react";
 
 import { NavDocuments } from "@/components/nav-documents";
 import { NavMain } from "@/components/nav-main";
@@ -32,33 +15,8 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { ReactNode, useEffect, useState } from "react";
-import { SupabaseClient } from "@supabase/supabase-js";
 import { Supabase } from "@/lib/__supabase__/supabase";
 import { usePathname } from "next/navigation";
-
-const data = {
-  navMain: [
-    {
-      title: "Transactions",
-      url: "/dashboard",
-      icon: IconListDetails,
-    },
-  ],
-  navSecondary: [
-    // {
-    //   title: "Settings",
-    //   url: "#",
-    //   icon: IconSettings,
-    // },
-  ],
-  documents: [
-    // {
-    //   name: "Data Library",
-    //   url: "#",
-    //   icon: IconDatabase,
-    // },
-  ],
-};
 
 export type AppSidebarProps = React.ComponentProps<typeof Sidebar> & {
   SB: typeof Supabase;
@@ -131,7 +89,13 @@ export function AppSidebar({
           <NavSecondary items={navSecondary} className="mt-auto" />
         )}
       </SidebarContent>
-      <SidebarFooter>{user && <NavUser SB={SB} user={user} />}</SidebarFooter>
+      <SidebarFooter>
+        {user ? (
+          <NavUser SB={SB} user={user} />
+        ) : errorMessage ? (
+          <>{errorMessage}</>
+        ) : null}
+      </SidebarFooter>
     </Sidebar>
   );
 }

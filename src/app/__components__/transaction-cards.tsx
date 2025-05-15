@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { IconTrendingDown, IconTrendingUp } from "@tabler/icons-react";
+
 import { IoAddOutline } from "react-icons/io5";
 import { RxUpdate } from "react-icons/rx";
 
@@ -47,6 +47,7 @@ export function TransactionCards({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [edited, setEdited] = useState<Partial<Transaction>>({});
 
+  // @typescript-eslint/no-explicit-any
   const handleChange = (field: keyof Transaction, value: any) => {
     setEdited((prev) => ({ ...prev, [field]: value }));
   };

@@ -20,9 +20,7 @@ import { ErrorCard } from "./error-card";
 import { SuccessCard } from "./success-card";
 import { toast } from "./toast";
 import Link from "next/link";
-import { WarningCard } from "./warning-card";
 import { useState } from "react";
-import { InfoCard } from "./info-card";
 
 export function LoginForm({
   className,

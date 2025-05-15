@@ -1,19 +1,5 @@
-import { AppSidebar } from "@/components/app-sidebar";
-import { ChartAreaInteractive } from "@/components/chart-area-interactive";
-import { DataTable } from "@/components/data-table";
-import { TransactionCards } from "@/app/__components__/transaction-cards";
-import { SiteHeader } from "@/components/site-header";
-import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
-import {
-  useQuery,
-  useMutation,
-  useQueryClient,
-  QueryClient,
-  QueryClientProvider,
-} from "@tanstack/react-query";
 import { SB } from "../_accountant-supabase_/client";
-import { useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+
 import { currencies, CurrencyCode } from "../__types__/Currencies";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -24,13 +10,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
+
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 import { SelectSearch } from "@/components/select-search";
 import { toast } from "@/components/toast";
-import { on } from "events";
 
 const AddTransactionForm = ({
   onSubmitted,
