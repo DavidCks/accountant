@@ -63,7 +63,13 @@ const TransactionsSum = ({ transactions }: { transactions: Transaction[] }) => {
           );
           return sum;
         }
-        return sum + parseFloat(tx.amount) / rateEUR;
+        const amountOrig = parseFloat(tx.amount);
+        if (isNaN(amountOrig)) {
+          console.error(`Invalid amount for transaction: ${tx}`);
+          return sum;
+        }
+        const amount = amountOrig * (tx.flow === "expense" ? -1 : 1);
+        return sum + amount / rateEUR;
       }, 0);
       setSelectedTxSum(nextTransactionSum);
       setSelectedRange(nextRange);
