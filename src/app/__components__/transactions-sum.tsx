@@ -55,11 +55,16 @@ const TransactionsSum = ({ transactions }: { transactions: Transaction[] }) => {
           all: transactions,
         } as const
       )[nextRange];
-      const nextTransactionSum = nextTransactions!.reduce(
-        (sum, tx) =>
-          sum + parseFloat(tx.amount) / rates?.[tx.currency_code]?.rateEUR!,
-        0
-      );
+      const nextTransactionSum = nextTransactions!.reduce((sum, tx) => {
+        const rateEUR = rates?.[tx.currency_code]?.rateEUR;
+        if (!rateEUR) {
+          console.error(
+            `No exchange rate found for currency code ${tx.currency_code}`
+          );
+          return sum;
+        }
+        return sum + parseFloat(tx.amount) / rateEUR;
+      }, 0);
       setSelectedTxSum(nextTransactionSum);
       setSelectedRange(nextRange);
     },
