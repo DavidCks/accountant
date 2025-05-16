@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Transaction } from "../__types__/Transaction";
 import { TimePoints } from "./utils/time";
 import { Button } from "@/components/ui/button";
-import { CurrencyCode } from "../__types__/generated/Currencies";
+import { currencies, CurrencyCode } from "../__types__/generated/Currencies";
 import { SB } from "../_accountant-supabase_/client";
 
 const TransactionsSum = ({ transactions }: { transactions: Transaction[] }) => {
@@ -32,7 +32,7 @@ const TransactionsSum = ({ transactions }: { transactions: Transaction[] }) => {
         rateEUR: number;
       };
     }) => {
-      rates = rates ?? exchangeRates;
+      const exRates = JSON.parse(JSON.stringify(rates ?? exchangeRates));
       const nextRange = (
         {
           day: "24h",
@@ -56,7 +56,7 @@ const TransactionsSum = ({ transactions }: { transactions: Transaction[] }) => {
         } as const
       )[nextRange];
       const nextTransactionSum = nextTransactions!.reduce((sum, tx) => {
-        const rateEUR = rates?.[tx.currency_code]?.rateEUR;
+        const rateEUR = exRates?.[tx.currency_code]?.rateEUR;
         if (!rateEUR) {
           console.error(
             `No exchange rate found for currency code ${tx.currency_code}`
@@ -69,7 +69,8 @@ const TransactionsSum = ({ transactions }: { transactions: Transaction[] }) => {
           return sum;
         }
         const amount = amountOrig * (tx.flow === "expense" ? -1 : 1);
-        return sum + amount / rateEUR;
+        const isCrypto = currencies[tx.currency_code]?.type === "crypto";
+        return sum + (isCrypto ? amount * rateEUR : amount / rateEUR);
       }, 0);
       setSelectedTxSum(nextTransactionSum);
       setSelectedRange(nextRange);
