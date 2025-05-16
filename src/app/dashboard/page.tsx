@@ -18,6 +18,7 @@ import { OnLoadReturnType } from "@/components/confirm-message-controller";
 import { IconListDetails } from "@tabler/icons-react";
 import { usePathname } from "next/navigation";
 import { DialogTitle } from "@radix-ui/react-dialog";
+import TransactionsSum from "../__components__/transactions-sum";
 
 const queryClient = new QueryClient();
 
@@ -159,7 +160,31 @@ const PageImpl = () => {
       />
       <SidebarInset>
         <SiteHeader
-          title={navItems.navMain.find((item) => item.url === pathname)?.title}
+          title={
+            <>
+              <div className="flex justify-between w-full relative">
+                <span>
+                  {
+                    navItems.navMain.find((item) => item.url === pathname)
+                      ?.title
+                  }
+                </span>
+              </div>
+              <span className="absolute sm:right-1/2 sm:translate-x-1/2 top-1.5 right-2">
+                {!initialLoad &&
+                transactionsMutation.isSuccess &&
+                !transactionsMutation.data.error ? (
+                  <TransactionsSum
+                    transactions={transactionsMutation.data!.value!}
+                  />
+                ) : (
+                  <span className="animate-pulse">
+                    <div className="rounded-full h-2 w-2 dark:bg-white/50"></div>
+                  </span>
+                )}
+              </span>
+            </>
+          }
         />
         <div className="flex flex-1 flex-col">
           <div className="@container/main flex flex-1 flex-col gap-2">

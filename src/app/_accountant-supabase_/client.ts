@@ -1,6 +1,7 @@
 import { Supabase } from "../../lib/__supabase__/supabase";
 import { Transaction } from "../__types__/Transaction";
 import { FReturn } from "../../lib/__types__/FReturn";
+import { CurrencyCode } from "../__types__/generated/Currencies";
 
 export class SB extends Supabase {
   constructor() {
@@ -131,6 +132,49 @@ export class SB extends Supabase {
     }
     return {
       value: true,
+      error: null,
+    };
+  }
+
+  static async getExchangeRates(): Promise<
+    FReturn<{
+      [code: string]: {
+        code: CurrencyCode;
+        rateEUR: number;
+      };
+    }>
+  > {
+    await Supabase.ensureInitialized();
+    const user = await Supabase.getCurrentUser();
+    if (user.error) {
+      return {
+        value: null,
+        error: user.error,
+      };
+    }
+    const result = await Supabase.client.from("currencies").select("*");
+    if (result.error) {
+      return {
+        value: null,
+        error: {
+          message: result.error.message,
+          code: result.error.code,
+        },
+      };
+    }
+    const data = result.data.map((item) => ({
+      [item.code as string]: {
+        code: item.code as CurrencyCode,
+        rateEUR: item.exchange_rate as number,
+      },
+    }));
+    const rates = data.reduce((acc, item) => {
+      const key = Object.keys(item)[0];
+      acc[key] = item[key];
+      return acc;
+    }, {} as { [code: string]: { code: CurrencyCode; rateEUR: number } });
+    return {
+      value: rates,
       error: null,
     };
   }
