@@ -5,11 +5,11 @@ import { cn } from "@/lib/utils";
 import { ReactNode } from "react";
 
 export function SiteHeader({
-  title,
+  heading: title,
   className,
   ...props
 }: {
-  title: ReactNode;
+  heading: ReactNode;
 } & React.ComponentProps<"header">) {
   return (
     <header

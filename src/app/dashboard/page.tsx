@@ -160,7 +160,7 @@ const PageImpl = () => {
       />
       <SidebarInset>
         <SiteHeader
-          title={
+          heading={
             <>
               <div className="flex justify-between w-full relative">
                 <span>
