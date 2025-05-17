@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Transaction } from "../__types__/Transaction";
 import { TimePoints } from "./utils/time";
 import { Button } from "@/components/ui/button";
-import { currencies, CurrencyCode } from "../__types__/generated/Currencies";
+import { CurrencyCode } from "../__types__/generated/Currencies";
 import { SB } from "../_accountant-supabase_/client";
 
 const TransactionsSum = ({ transactions }: { transactions: Transaction[] }) => {
