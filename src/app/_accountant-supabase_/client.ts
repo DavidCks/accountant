@@ -140,7 +140,7 @@ export class SB extends Supabase {
     FReturn<{
       [code: string]: {
         code: CurrencyCode;
-        rateEUR: number;
+        rateUSD: number;
       };
     }>
   > {
@@ -165,14 +165,14 @@ export class SB extends Supabase {
     const data = result.data.map((item) => ({
       [item.code as string]: {
         code: item.code as CurrencyCode,
-        rateEUR: item.exchange_rate as number,
+        rateUSD: item.exchange_rate as number,
       },
     }));
     const rates = data.reduce((acc, item) => {
       const key = Object.keys(item)[0];
       acc[key] = item[key];
       return acc;
-    }, {} as { [code: string]: { code: CurrencyCode; rateEUR: number } });
+    }, {} as { [code: string]: { code: CurrencyCode; rateUSD: number } });
     return {
       value: rates,
       error: null,

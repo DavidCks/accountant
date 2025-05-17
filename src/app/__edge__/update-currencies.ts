@@ -54,6 +54,7 @@ Deno.serve(async () => {
 
     const rates = exchangeData.rates;
 
+    const eurToUsd = 1 / rates["USD"];
     // Step 4: For each currency, update the exchange_rate
     const updates = await Promise.all(
       fiatCurrencies.map(async (currency: any) => {
@@ -70,7 +71,7 @@ Deno.serve(async () => {
               "Content-Type": "application/json",
               Prefer: "return=representation",
             },
-            body: JSON.stringify({ exchange_rate: newRate }),
+            body: JSON.stringify({ exchange_rate: newRate * eurToUsd }),
           }
         );
 
@@ -84,12 +85,6 @@ Deno.serve(async () => {
         return await patchRes.json();
       })
     );
-
-    const eurToUsd = rates["USD"];
-    if (!eurToUsd || typeof eurToUsd !== "number") {
-      throw new Error("Missing EUR to USD exchange rate in fiat data");
-    }
-    const usdToEur = 1 / eurToUsd;
 
     // Step 4: Fetch crypto currencies
     const cryptoRes = await fetch(
@@ -119,13 +114,11 @@ Deno.serve(async () => {
       cryptoMarketData.map((c: any) => [c.symbol.toUpperCase(), c.price])
     );
 
-    // Step 6: Update crypto exchange rates (convert USD → EUR)
+    // Step 6: Update crypto exchange rates
     const cryptoUpdates = await Promise.all(
       cryptoCurrencies.map(async (currency: any) => {
         const priceUSD = cryptoRatesMapUSD[currency.code];
         if (!priceUSD) return null;
-
-        const priceEUR = priceUSD / usdToEur;
 
         const patchRes = await fetch(
           `${SUPABASE_URL}/rest/v1/currencies?code=eq.${currency.code}`,
@@ -137,7 +130,7 @@ Deno.serve(async () => {
               "Content-Type": "application/json",
               Prefer: "return=representation",
             },
-            body: JSON.stringify({ exchange_rate: priceEUR }),
+            body: JSON.stringify({ exchange_rate: 1 / priceUSD }),
           }
         );
 

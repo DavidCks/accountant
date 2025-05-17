@@ -16,7 +16,7 @@ const TransactionsSum = ({ transactions }: { transactions: Transaction[] }) => {
   const [exchangeRates, setExchangeRates] = useState<{
     [code: string]: {
       code: CurrencyCode;
-      rateEUR: number;
+      rateUSD: number;
     };
   }>({});
 
@@ -29,10 +29,15 @@ const TransactionsSum = ({ transactions }: { transactions: Transaction[] }) => {
     (rates?: {
       [code: string]: {
         code: CurrencyCode;
-        rateEUR: number;
+        rateUSD: number;
       };
     }) => {
-      const exRates = JSON.parse(JSON.stringify(rates ?? exchangeRates));
+      const exRates: {
+        [code: string]: {
+          code: CurrencyCode;
+          rateUSD: number;
+        };
+      } = JSON.parse(JSON.stringify(rates ?? exchangeRates));
       const nextRange = (
         {
           day: "24h",
@@ -56,8 +61,8 @@ const TransactionsSum = ({ transactions }: { transactions: Transaction[] }) => {
         } as const
       )[nextRange];
       const nextTransactionSum = nextTransactions!.reduce((sum, tx) => {
-        const rateEUR = exRates?.[tx.currency_code]?.rateEUR;
-        if (!rateEUR) {
+        const rateUSD = exRates?.[tx.currency_code]?.rateUSD;
+        if (!rateUSD) {
           console.error(
             `No exchange rate found for currency code ${tx.currency_code}`
           );
@@ -69,8 +74,7 @@ const TransactionsSum = ({ transactions }: { transactions: Transaction[] }) => {
           return sum;
         }
         const amount = amountOrig * (tx.flow === "expense" ? -1 : 1);
-        const isCrypto = currencies[tx.currency_code]?.type === "crypto";
-        return sum + (isCrypto ? amount * rateEUR : amount / rateEUR);
+        return sum + amount / rateUSD;
       }, 0);
       setSelectedTxSum(nextTransactionSum);
       setSelectedRange(nextRange);
@@ -143,9 +147,9 @@ const TransactionsSum = ({ transactions }: { transactions: Transaction[] }) => {
       ) : (
         <>
           <span className="text-lg font-bold">
-            {selectedTxSum?.toLocaleString("de-DE", {
+            {selectedTxSum?.toLocaleString("en-US", {
               style: "currency",
-              currency: "EUR",
+              currency: "USD",
             })}
           </span>
           <span className="text-sm text-gray-500 pt-1">{selectedRange}</span>
