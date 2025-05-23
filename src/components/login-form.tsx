@@ -20,7 +20,7 @@ import { ErrorCard } from "./error-card";
 import { SuccessCard } from "./success-card";
 import { toast } from "./toast";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export function LoginForm({
   className,
@@ -36,6 +36,11 @@ export function LoginForm({
   const [isLoading, setIsLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [email, setEmail] = useState(defaultEmail ?? "");
+  useEffect(() => {
+    if (!email && defaultEmail) {
+      setEmail(defaultEmail);
+    }
+  }, [defaultEmail]);
 
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>

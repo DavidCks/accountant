@@ -1,9 +1,10 @@
 "use client";
 import { LoginForm } from "@/components/login-form";
-import { ComponentProps, ReactNode } from "react";
+import { ComponentProps, ReactNode, useEffect, useState } from "react";
 import { Supabase } from "../__supabase__/supabase";
 import { cn } from "../utils";
 import useUrlParameter from "../__hooks__/useUrlParameter";
+import { useSearchParams } from "next/navigation";
 
 /**
  * LoginPage component provides a styled login interface that wraps the `LoginForm` component.
@@ -51,7 +52,14 @@ export default function LoginPage({
   header?: ReactNode;
   footer?: ReactNode;
 }) {
-  const defaultEmail = useUrlParameter("email");
+  const searchParams = useSearchParams();
+  const [defaultEmail, setEmail] = useState<string | undefined>(undefined);
+
+  useEffect(() => {
+    const param = searchParams.get("email");
+    console.log("searchParams.get('email') →", param);
+    setEmail(param ?? undefined);
+  }, [searchParams]);
 
   return (
     <>
