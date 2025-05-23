@@ -3,6 +3,7 @@ import { LoginForm } from "@/components/login-form";
 import { ComponentProps, ReactNode } from "react";
 import { Supabase } from "../__supabase__/supabase";
 import { cn } from "../utils";
+import useUrlParameter from "../__hooks__/useUrlParameter";
 
 /**
  * LoginPage component provides a styled login interface that wraps the `LoginForm` component.
@@ -50,6 +51,8 @@ export default function LoginPage({
   header?: ReactNode;
   footer?: ReactNode;
 }) {
+  const defaultEmail = useUrlParameter("email");
+
   return (
     <>
       {header}
@@ -62,6 +65,7 @@ export default function LoginPage({
       >
         <div className="w-full max-w-sm">
           <LoginForm
+            defaultEmail={defaultEmail}
             onLogin={async (email: string, password: string) => {
               console.log("Login attempt", { email, password });
               const result = await SB.signIn(email, password);

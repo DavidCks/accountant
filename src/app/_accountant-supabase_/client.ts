@@ -2,6 +2,7 @@ import { Supabase } from "../../lib/__supabase__/supabase";
 import { Transaction } from "../__types__/Transaction";
 import { FReturn } from "../../lib/__types__/FReturn";
 import { CurrencyCode } from "../__types__/generated/Currencies";
+import { User } from "@supabase/supabase-js";
 
 export class SB extends Supabase {
   constructor() {
@@ -11,7 +12,9 @@ export class SB extends Supabase {
     );
   }
 
-  static async getTransactions(): Promise<FReturn<Transaction[]>> {
+  static async getTransactions(): Promise<
+    FReturn<{ txs: Transaction[]; user: User }>
+  > {
     await Supabase.ensureInitialized();
     const user = await Supabase.getCurrentUser();
     if (user.error) {
@@ -34,7 +37,7 @@ export class SB extends Supabase {
       };
     }
     return {
-      value: transactions.data,
+      value: { txs: transactions.data, user: user.value },
       error: null,
     };
   }

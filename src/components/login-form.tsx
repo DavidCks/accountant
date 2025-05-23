@@ -25,14 +25,17 @@ import { useState } from "react";
 export function LoginForm({
   className,
   onLogin,
+  defaultEmail,
   ...props
 }: React.ComponentProps<"div"> & {
   onLogin: OnLoginCallbackType;
+  defaultEmail?: string;
 }) {
   const router = useRouter();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [email, setEmail] = useState(defaultEmail ?? "");
 
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
@@ -84,6 +87,8 @@ export function LoginForm({
                   name="email"
                   type="email"
                   placeholder="m@example.com"
+                  value={email}
+                  onChange={(v) => setEmail(v.target.value)}
                   required
                 />
               </div>

@@ -20,15 +20,18 @@ import {
 import { Supabase } from "@/lib/__supabase__/supabase";
 
 import { useRouter } from "next/navigation";
+import { Plus, RefreshCcw } from "lucide-react";
 
 export function NavUser({
   user,
   SB,
+  loginUrl,
 }: {
   user: {
     email: string;
   };
   SB: typeof Supabase;
+  loginUrl: string;
 }) {
   const { isMobile } = useSidebar();
   const router = useRouter();
@@ -90,11 +93,59 @@ export function NavUser({
                 Notifications
               </DropdownMenuItem>
             </DropdownMenuGroup> */}
-            {/* <DropdownMenuSeparator /> */}
+            {SB.storedSessions.value &&
+              SB.storedSessions.value
+                .filter(
+                  (storedSessionData) => storedSessionData.email !== user.email
+                )
+                .map((storedSessionData) => (
+                  <DropdownMenuItem
+                    key={storedSessionData.email}
+                    onClick={() =>
+                      SB.restoreSession(storedSessionData.email).then((res) => {
+                        if (res.error) {
+                          let url: URL;
+                          if (
+                            loginUrl.startsWith("http://") ||
+                            loginUrl.startsWith("https://")
+                          ) {
+                            url = new URL(loginUrl); // Absolute
+                          } else {
+                            url = new URL(loginUrl, window.location.origin); // Relative
+                          }
+                          url.searchParams.set(
+                            "email",
+                            storedSessionData.email
+                          );
+                          const urlString = url.toString();
+                          router.push(urlString);
+                        }
+                      })
+                    }
+                  >
+                    <div className="flex items-center gap-2 py-1.5 text-left text-sm">
+                      <RefreshCcw />
+                      <Avatar className="h-8 w-8<RefreshCcw /> rounded-lg">
+                        <AvatarFallback className="rounded-lg">
+                          {storedSessionData.email.at(0)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="grid flex-1 text-left text-sm leading-tight">
+                        <span className="text-muted-foreground truncate text-xs">
+                          {storedSessionData.email}
+                        </span>
+                      </div>
+                    </div>
+                  </DropdownMenuItem>
+                ))}
+            <DropdownMenuItem onClick={() => router.push(loginUrl)}>
+              <Plus /> Add account
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
             <DropdownMenuItem
               onClick={() =>
                 SB.signOut().then(() => {
-                  router.push("/");
+                  router.push(loginUrl);
                 })
               }
             >

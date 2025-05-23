@@ -14,9 +14,11 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode, useState } from "react";
 import { Supabase } from "@/lib/__supabase__/supabase";
 import { usePathname } from "next/navigation";
+import { useAuthEffect } from "@/lib/__supabase__/__hooks__/useAuthEffect";
+import Link from "next/link";
 
 export type AppSidebarProps = React.ComponentProps<typeof Sidebar> & {
   SB: typeof Supabase;
@@ -35,6 +37,7 @@ export type AppSidebarProps = React.ComponentProps<typeof Sidebar> & {
     url: string;
     icon?: Icon;
   }[];
+  loginUrl: string;
   title: ReactNode;
 };
 
@@ -43,27 +46,35 @@ export function AppSidebar({
   navMain,
   navSecondary,
   documents,
+  loginUrl,
   title,
   ...props
 }: AppSidebarProps) {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [errorCode, setErrorCode] = useState<string | number | null>(null);
   const pathname = usePathname();
   const [user, setUser] = useState<{
     email: string;
   } | null>(null);
 
-  useEffect(() => {
-    // Get the current user from Supabase
-    SB.getCurrentUser().then((user) => {
-      if (user.error) {
-        setErrorMessage(user.error.message);
-      } else {
-        setUser({
-          email: user.value.email!,
-        });
-      }
-    });
-  }, []);
+  useAuthEffect((event, session) => {
+    if (
+      (event === "SIGNED_IN" && user?.email !== session?.user.email) ||
+      (event === "INITIAL_SESSION" && session === null)
+    ) {
+      // Get the current user from Supabase
+      SB.getCurrentUser().then((user) => {
+        if (user.error) {
+          setErrorMessage(user.error.message);
+          setErrorCode(user.error.code);
+        } else {
+          setUser({
+            email: user.value.email!,
+          });
+        }
+      });
+    }
+  });
 
   return (
     <Sidebar collapsible="offcanvas" {...props}>
@@ -91,9 +102,13 @@ export function AppSidebar({
       </SidebarContent>
       <SidebarFooter>
         {user ? (
-          <NavUser SB={SB} user={user} />
+          <NavUser SB={SB} user={user} loginUrl={loginUrl} />
         ) : errorMessage ? (
-          <>{errorMessage}</>
+          errorCode === 400 ? (
+            <Link href={loginUrl}>Login</Link>
+          ) : (
+            <>{errorMessage}</>
+          )
         ) : null}
       </SidebarFooter>
     </Sidebar>

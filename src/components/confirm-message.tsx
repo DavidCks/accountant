@@ -12,14 +12,17 @@ import { toast } from "./toast";
 import Link from "next/link";
 import { ErrorCard } from "./error-card";
 import { SuccessCard } from "./success-card";
+import { WarningCard } from "./warning-card";
 
 export function ConfirmMessage({
   className,
   onLoad,
   title,
+  type = "success",
   ...props
 }: React.ComponentProps<"div"> & {
   title: ReactNode;
+  type?: "success" | "warning";
   onLoad: OnLoadCallbackType;
 }) {
   const router = useRouter();
@@ -73,7 +76,11 @@ export function ConfirmMessage({
         >
           <div className="flex flex-col gap-4">
             {errorMessage && <ErrorCard> {errorMessage}</ErrorCard>}
-            {successMessage && <SuccessCard>{successMessage}</SuccessCard>}
+            {successMessage && type === "success" ? (
+              <SuccessCard>{successMessage}</SuccessCard>
+            ) : (
+              <WarningCard>{successMessage}</WarningCard>
+            )}
           </div>
         </CardContent>
       </Card>

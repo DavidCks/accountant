@@ -7,6 +7,7 @@ import {
   WeakPassword,
 } from "@supabase/supabase-js";
 import { FReturn } from "../__types__/FReturn";
+import { authEvents } from "./authEvents";
 
 /**
  * Supabase class that provides a wrapper around the Supabase client.
@@ -34,6 +35,13 @@ export abstract class Supabase {
    * @private
    */
   private static _authSubscription: Subscription | null = null;
+
+  /**
+   * List of custom auth state change listeners registered via `onAuthChange`.
+   */
+  private static _customAuthListeners: Array<
+    (event: string, session: Session | null) => void
+  > = [];
 
   /**
    * Get the current Supabase client instance.
@@ -91,15 +99,41 @@ export abstract class Supabase {
   }
 
   /**
-   * Subscribes to authentication state changes (login, logout, etc.).
-   * Used internally to handle auth lifecycle events.
-   * @private
+   * Registers a custom listener for Supabase auth state changes.
+   *
+   * @param {(event: string, session: Session | null) => void} listener
+   * A function to be called on each auth state change.
    */
+  static onAuthChange(
+    listener: (event: string, session: Session | null) => void
+  ): void {
+    Supabase.ensureInitialized();
+
+    if (typeof listener !== "function") return;
+
+    Supabase._customAuthListeners.push(listener);
+  }
+
+  /**
+   * Unregisters a previously registered auth change listener.
+   *
+   * @param {(event: string, session: Session | null) => void} listener
+   * The same listener function that was passed to `onAuthChange`.
+   */
+  static offAuthChange(
+    listener: (event: string, session: Session | null) => void
+  ): void {
+    Supabase._customAuthListeners = Supabase._customAuthListeners.filter(
+      (fn) => fn !== listener
+    );
+  }
+
   private static _subscribeToAuthStateChange(): void {
     const { data } = Supabase.client.auth.onAuthStateChange(
       (event, session) => {
         console.log(event, session);
 
+        // Default internal handling
         if (event === "INITIAL_SESSION") {
           // handle initial session
         } else if (event === "SIGNED_IN") {
@@ -113,8 +147,19 @@ export abstract class Supabase {
         } else if (event === "USER_UPDATED") {
           // handle user updated event
         }
+
+        // Custom registered handlers
+        for (const listener of Supabase._customAuthListeners) {
+          try {
+            listener(event, session);
+          } catch (e) {
+            console.warn("Auth listener error:", e);
+          }
+        }
+        authEvents.emit(event, session);
       }
     );
+
     Supabase._authSubscription = data.subscription;
   }
 
@@ -346,6 +391,164 @@ export abstract class Supabase {
   }
 
   /**
+   * Retrieves all stored Supabase sessions from local storage.
+   *
+   * @returns {FReturn<Array<{ email: string; session: Session }>>}
+   * An object containing an array of stored sessions with associated emails, or an error.
+   */
+  static get storedSessions(): FReturn<
+    Array<{ email: string; session: Session }>
+  > {
+    try {
+      const emailsRaw = localStorage.getItem("session:emails");
+      if (!emailsRaw) {
+        return {
+          value: [],
+          error: null,
+        };
+      }
+
+      const emails: string[] = JSON.parse(emailsRaw);
+      const sessions: Array<{ email: string; session: Session }> = [];
+
+      for (const email of emails) {
+        const sessionRaw = localStorage.getItem(`session:${email}`);
+        if (!sessionRaw) continue;
+
+        try {
+          const session: Session = JSON.parse(sessionRaw);
+          sessions.push({ email, session });
+        } catch (error) {
+          console.warn(`Failed to parse session for ${email}`, error);
+        }
+      }
+
+      return {
+        value: sessions,
+        error: null,
+      };
+    } catch (error) {
+      return {
+        value: null,
+        error: {
+          message:
+            error instanceof Error
+              ? error.message
+              : "An unknown error occurred while retrieving stored sessions.",
+          code: 500,
+        },
+      };
+    }
+  }
+
+  /**
+   * Restores a Supabase session for the given email.
+   *
+   * @param {string} email - The email associated with the stored session.
+   * @returns {Promise<FReturn<User>>}
+   * Returns the restored user if successful, or an error if not.
+   */
+  static async restoreSession(email: string): Promise<FReturn<User>> {
+    try {
+      Supabase.ensureInitialized();
+
+      // Retrieve session from storage
+      const sessionString = localStorage.getItem(`session:${email}`);
+      if (!sessionString) {
+        return {
+          value: null,
+          error: {
+            message: `No stored session found for email: ${email}`,
+            code: 404,
+          },
+        };
+      }
+
+      const session = JSON.parse(sessionString);
+
+      // Restore session
+      const { data, error } = await Supabase.client.auth.setSession({
+        access_token: session.access_token,
+        refresh_token: session.refresh_token,
+      });
+
+      if (error || !data.session || !data.session.user) {
+        return {
+          value: null,
+          error: {
+            message: error?.message ?? "Failed to restore session",
+            code: error?.status ?? 500,
+          },
+        };
+      }
+
+      return {
+        value: data.session.user,
+        error: null,
+      };
+    } catch (error) {
+      console.error(
+        error instanceof Error
+          ? error.message
+          : `An error occurred while restoring the session for ${email}`
+      );
+      return {
+        value: null,
+        error: {
+          message:
+            error instanceof Error
+              ? error.message
+              : `An error occurred while restoring the session for ${email}`,
+          code: 500,
+        },
+      };
+    }
+  }
+
+  /**
+   * Stores a Supabase session for a given email in local storage,
+   * and updates the list of stored session emails.
+   *
+   * @param {string} email - The email associated with the session.
+   * @param {Session} session - The Supabase session object to store.
+   */
+  static storeSession(email: string, session: Session): FReturn<true> {
+    try {
+      if (!email || !session) {
+        throw new Error("Email and session are required to store session.");
+      }
+
+      // Store session under email-specific key
+      const sessionString = JSON.stringify(session);
+      localStorage.setItem(`session:${email}`, sessionString);
+
+      // Update list of stored session emails
+      const emailsKey = "session:emails";
+      const emailsRaw = localStorage.getItem(emailsKey);
+      const emails: string[] = emailsRaw ? JSON.parse(emailsRaw) : [];
+
+      if (!emails.includes(email)) {
+        emails.push(email);
+        localStorage.setItem(emailsKey, JSON.stringify(emails));
+      }
+
+      return {
+        value: true,
+        error: null,
+      };
+    } catch (error) {
+      console.warn(`Failed to store session for ${email}:`, error);
+      return {
+        value: null,
+        error: {
+          message: error ? `${error}` : `Failed to store session for ${email}`,
+          code: "failed_storing_session",
+        },
+      };
+    }
+  }
+
+  /**
    * Authenticates a user using email and password.
    *
    * @param {string} email - The user's email.
@@ -420,6 +623,16 @@ export abstract class Supabase {
             code: 500,
           },
         };
+      }
+
+      if (result.data.user.email) {
+        const storeResult = Supabase.storeSession(
+          result.data.user.email,
+          result.data.session
+        );
+        if (storeResult.error) {
+          console.warn("Warning: Storing the session failed");
+        }
       }
 
       return {

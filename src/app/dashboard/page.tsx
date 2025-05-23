@@ -19,6 +19,8 @@ import { IconListDetails } from "@tabler/icons-react";
 import { usePathname } from "next/navigation";
 import { DialogTitle } from "@radix-ui/react-dialog";
 import TransactionsSum from "../__components__/transactions-sum";
+import { useAuthEffect } from "@/lib/__supabase__/__hooks__/useAuthEffect";
+import { useRouter } from "next/navigation";
 
 const queryClient = new QueryClient();
 
@@ -44,9 +46,19 @@ const PageImpl = () => {
   const transactionsMutation = useMutation({
     mutationFn: SB.getTransactions,
   });
+  const router = useRouter();
   const pathname = usePathname();
   const [initialLoad, setInitialLoad] = useState(true);
   const [loading, setLoading] = useState(false);
+
+  useAuthEffect((event, session) => {
+    if (
+      event === "SIGNED_IN" &&
+      transactionsMutation.data?.value?.user.id !== session?.user.id
+    ) {
+      transactionsMutation.mutate();
+    }
+  });
 
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   if (!transactionsMutation.isSuccess && initialLoad) {
@@ -157,6 +169,7 @@ const PageImpl = () => {
         SB={SB}
         title="accountant"
         variant="inset"
+        loginUrl="/login"
       />
       <SidebarInset>
         <SiteHeader
@@ -175,7 +188,7 @@ const PageImpl = () => {
                 transactionsMutation.isSuccess &&
                 !transactionsMutation.data.error ? (
                   <TransactionsSum
-                    transactions={transactionsMutation.data!.value!}
+                    transactions={transactionsMutation.data!.value!.txs!}
                   />
                 ) : (
                   <span className="animate-pulse">
@@ -219,7 +232,7 @@ const PageImpl = () => {
                   </Dialog>
                   <TransactionCards
                     onChange={() => transactionsMutation.mutate()}
-                    transactions={transactionsMutation.data.value.sort(
+                    transactions={transactionsMutation.data.value.txs.sort(
                       (a, b) => {
                         return (
                           new Date(b.created_at).getTime() -
@@ -240,6 +253,35 @@ const PageImpl = () => {
                           message: "Updating transactions...",
                         },
                         error: null,
+                      };
+                    }}
+                  />
+                </div>
+              ) : transactionsMutation.data?.error ? (
+                <div className="flex flex-1 items-center justify-center h-screen">
+                  <ConfirmMessage
+                    title="Not logged in"
+                    type="warning"
+                    onLoad={async () => {
+                      if (transactionsMutation.data?.error?.code === 400) {
+                        return {
+                          value: {
+                            message: "Redirecting to the Login page...",
+                            redirectTo: "/login",
+                          },
+                          error: null,
+                        };
+                      }
+                      return {
+                        value: null,
+                        error: {
+                          message:
+                            transactionsMutation.data?.error?.message ??
+                            "Loading transactions failed.",
+                          code:
+                            transactionsMutation.data?.error?.code ??
+                            "transaction_update_failed",
+                        },
                       };
                     }}
                   />

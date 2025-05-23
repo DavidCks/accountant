@@ -15,6 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Check, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ScrollArea } from "./ui/scroll-area";
 
 type SelectSearchProps<T> = {
   options: T[];
@@ -96,7 +97,7 @@ export function SelectSearch<T>({
   };
 
   return (
-    <Popover open={open} onOpenChange={setOpen} {...popoverProps}>
+    <Popover modal={true} open={open} onOpenChange={setOpen} {...popoverProps}>
       <PopoverTrigger asChild>
         <Button
           variant="outline"
@@ -112,18 +113,54 @@ export function SelectSearch<T>({
         <Command>
           <CommandInput placeholder="Search..." />
 
-          {recents.length > 0 && (
-            <CommandGroup heading="Recent">
-              {recents.map((option, i) => {
+          <ScrollArea className="max-h-[300px] h-[300px]">
+            {recents.length > 0 && (
+              <CommandGroup heading="Recent">
+                {recents.map((option, i) => {
+                  const label = getLabel(option);
+                  return (
+                    <CommandItem
+                      key={`recent-${i}`}
+                      value={label}
+                      tabIndex={0}
+                      className="hover:bg-muted focus:bg-accent"
+                      onSelect={() => {
+                        handleSelect(option);
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") handleSelect(option);
+                      }}
+                    >
+                      <Check
+                        className={cn(
+                          "mr-2 h-4 w-4",
+                          currentValue &&
+                            getValue(currentValue) === getValue(option)
+                            ? "opacity-100"
+                            : "opacity-0"
+                        )}
+                      />
+                      {label}
+                    </CommandItem>
+                  );
+                })}
+              </CommandGroup>
+            )}
+
+            <CommandGroup heading="All Options">
+              {optionsWithoutRecents.map((option, i) => {
                 const label = getLabel(option);
                 return (
                   <CommandItem
-                    key={`recent-${i}`}
+                    tabIndex={0}
+                    className="hover:bg-muted focus:bg-accent focus:outline-none"
+                    key={`option-${i}`}
                     value={label}
                     onSelect={() => {
-                      setSelectedValue(option);
-                      setOpen(false);
-                      onChange?.(option);
+                      handleSelect(option);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") handleSelect(option);
                     }}
                   >
                     <Check
@@ -140,33 +177,7 @@ export function SelectSearch<T>({
                 );
               })}
             </CommandGroup>
-          )}
-
-          <CommandGroup heading="All Options">
-            {optionsWithoutRecents.map((option, i) => {
-              const label = getLabel(option);
-              return (
-                <CommandItem
-                  key={`option-${i}`}
-                  value={label}
-                  onSelect={() => {
-                    handleSelect(option);
-                  }}
-                >
-                  <Check
-                    className={cn(
-                      "mr-2 h-4 w-4",
-                      currentValue &&
-                        getValue(currentValue) === getValue(option)
-                        ? "opacity-100"
-                        : "opacity-0"
-                    )}
-                  />
-                  {label}
-                </CommandItem>
-              );
-            })}
-          </CommandGroup>
+          </ScrollArea>
         </Command>
       </PopoverContent>
 
