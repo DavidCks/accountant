@@ -20,7 +20,6 @@ import { usePathname } from "next/navigation";
 import { DialogTitle } from "@radix-ui/react-dialog";
 import TransactionsSum from "../__components__/transactions-sum";
 import { useAuthEffect } from "@/lib/__supabase__/__hooks__/useAuthEffect";
-import { useRouter } from "next/navigation";
 
 const queryClient = new QueryClient();
 
@@ -46,7 +45,6 @@ const PageImpl = () => {
   const transactionsMutation = useMutation({
     mutationFn: SB.getTransactions,
   });
-  const router = useRouter();
   const pathname = usePathname();
   const [initialLoad, setInitialLoad] = useState(true);
   const [loading, setLoading] = useState(false);
