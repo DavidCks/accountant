@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "add:everything": "bun run node_modules/@davidcks/everything/everything.ts",
     "dev": "next dev",
     "build": "next build",
     "start": "bunx serve out",
@@ -11,6 +12,7 @@
     "update-types": "bun run ./src/app/__types__/generate.ts"
   },
   "dependencies": {
+    "@davidcks/everything": "git+https://github.com/DavidCks/everything.git",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/modifiers": "^9.0.0",
     "@dnd-kit/sortable": "^10.0.0",
