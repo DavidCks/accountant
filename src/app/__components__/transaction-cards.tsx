@@ -1,12 +1,14 @@
 "use client";
 
-import React, { useState } from "react";
+import { useState } from "react";
 
 import { IoAddOutline } from "react-icons/io5";
 import { RxUpdate } from "react-icons/rx";
 
+import { currencies } from "@/app/__types__/generated/Currencies";
+import { SelectSearch } from "@/components/select-search";
 import { Badge } from "@/components/ui/badge";
-import { Transaction } from "../__types__/Transaction";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardAction,
@@ -15,18 +17,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { currencies } from "@/app/__types__/generated/Currencies";
-import { SelectSearch } from "@/components/select-search";
-import { SB } from "../_accountant-supabase_/client";
 import {
   Dialog,
   DialogContent,
@@ -36,6 +26,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Transaction } from "../__types__/Transaction";
+import { SB } from "../_accountant-supabase_/client";
 
 export function TransactionCards({
   transactions,
@@ -91,8 +91,8 @@ export function TransactionCards({
                   data.status === "pending"
                     ? "bg-yellow-500"
                     : data.flow === "income"
-                    ? "bg-green-500"
-                    : "bg-red-500"
+                      ? "bg-green-500"
+                      : "bg-red-500"
                 }`}
               />
               <CardDescription>
@@ -121,7 +121,7 @@ export function TransactionCards({
                     {data.amount}{" "}
                     {
                       Object.entries(currencies).find(
-                        (c) => c[1].code === data.currency_code
+                        (c) => c[1].code === data.currency_code,
                       )![1].symbol
                     }
                   </>

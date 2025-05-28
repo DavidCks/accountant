@@ -73,7 +73,13 @@ const AddTransactionForm = ({
         {/* Amount */}
         <div className="grid gap-1">
           <Label htmlFor="amount">Amount</Label>
-          <Input id="amount" name="amount" type="number" step="0.01" required />
+          <Input
+            id="amount"
+            name="amount"
+            type="number"
+            step="0.000001"
+            required
+          />
         </div>
 
         {/* Currency */}
