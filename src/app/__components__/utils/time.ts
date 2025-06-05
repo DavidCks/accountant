@@ -1,10 +1,17 @@
 export class TimePoints {
   static dayStartMS(): number {
-    const nowMs = Date.now();
-    const nowHoursMs = new Date().getHours() * 60 * 60 * 1000;
-    const nowMinutesMs = new Date().getMinutes() * 60 * 1000;
-    const dayStartMs = nowMs - nowHoursMs - nowMinutesMs;
-    return dayStartMs;
+    const now = new Date();
+    // Midnight local time of the current day
+    const dayStart = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+      0,
+      0,
+      0,
+      0
+    );
+    return dayStart.getTime();
   }
 
   static h24AgoMS(): number {
@@ -14,12 +21,18 @@ export class TimePoints {
   }
 
   static weekStartMS(): number {
-    const nowMs = Date.now();
-    const nowDayMs = new Date().getDay() * 24 * 60 * 60 * 1000;
-    const nowHoursMs = new Date().getHours() * 60 * 60 * 1000;
-    const nowMinutesMs = new Date().getMinutes() * 60 * 1000;
-    const weekStartMs = nowMs - nowDayMs - nowHoursMs - nowMinutesMs;
-    return weekStartMs;
+    const now = new Date();
+    // Start of the current week (Sunday) at midnight
+    const weekStart = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate() - now.getDay(),
+      0,
+      0,
+      0,
+      0
+    );
+    return weekStart.getTime();
   }
 
   static d7AgoMS(): number {
@@ -35,13 +48,18 @@ export class TimePoints {
   }
 
   static monthStartMS(): number {
-    const nowMs = Date.now();
-    const nowDayMs = new Date().getDate() * 24 * 60 * 60 * 1000;
-    const nowHoursMs = new Date().getHours() * 60 * 60 * 1000;
-    const nowMinutesMs = new Date().getMinutes() * 60 * 1000;
-    const h24 = 24 * 60 * 60 * 1000;
-    const monthStartMs = nowMs - nowDayMs - nowHoursMs - nowMinutesMs + h24;
-    return monthStartMs;
+    const now = new Date();
+    // Midnight at the first day of the current month
+    const monthStart = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      1,
+      0,
+      0,
+      0,
+      0
+    );
+    return monthStart.getTime();
   }
 
   static isoToLocalMs(iso: string): number {
