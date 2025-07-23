@@ -36,6 +36,7 @@ import {
 } from "@/components/ui/select";
 import { Transaction } from "../__types__/Transaction";
 import { SB } from "../_accountant-supabase_/client";
+import { cn } from "@/lib/utils";
 
 export function TransactionCards({
   transactions,
@@ -87,13 +88,19 @@ export function TransactionCards({
           >
             <CardHeader className="relative">
               <div
-                className={`absolute left-2 -top-4 h-2 w-2 rounded-full ${
+                className={cn(
+                  `absolute left-2 -top-4 h-2 w-2 rounded-full`,
                   data.status === "pending"
-                    ? "bg-yellow-500"
+                    ? "bg-yellow-500 transform-3d"
                     : data.flow === "income"
                       ? "bg-green-500"
-                      : "bg-red-500"
-                }`}
+                      : "bg-red-500",
+                  data.status === "pending" &&
+                    "before:absolute before:left-3/6 before:-top-1/6 before:w-4/5 before:h-4/5 before:rounded-full before:-translate-z-0.5",
+                  data.flow === "income"
+                    ? "before:bg-green-500/70"
+                    : "before:bg-red-500/70",
+                )}
               />
               <CardDescription>
                 {data.flow === "income" ? "From " : "To "}
