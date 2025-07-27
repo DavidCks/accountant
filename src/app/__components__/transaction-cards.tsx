@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { IoAddOutline } from "react-icons/io5";
 import { RxUpdate } from "react-icons/rx";
@@ -37,16 +37,20 @@ import {
 import { Transaction } from "../__types__/Transaction";
 import { SB } from "../_accountant-supabase_/client";
 import { cn } from "@/lib/utils";
+import { Checkbox } from "@/components/ui/checkbox";
 
 export function TransactionCards({
   transactions,
   onChange,
+  onSelectionChange,
 }: {
   transactions: Transaction[];
   onChange: (transaction: Transaction) => void;
+  onSelectionChange?: (transactions: Transaction[]) => void;
 }) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [edited, setEdited] = useState<Partial<Transaction>>({});
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   // @typescript-eslint/no-explicit-any
   const handleChange = (field: keyof Transaction, value: any) => {
@@ -75,18 +79,48 @@ export function TransactionCards({
     stopEditing();
   };
 
+  const toggleSelection = (id: string) => {
+    setSelectedIds((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(id)) {
+        newSet.delete(id);
+      } else {
+        newSet.add(id);
+      }
+      return newSet;
+    });
+  };
+
+  useEffect(() => {
+    if (selectedIds.size > 0) {
+      setSelectedIds(new Set());
+    }
+  }, [transactions]);
+
+  useEffect(() => {
+    onSelectionChange?.(transactions.filter((t) => selectedIds.has(t.id)));
+  }, [selectedIds, onSelectionChange]);
+
   return (
     <div className="*:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card grid grid-cols-1 gap-4 px-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:shadow-xs lg:px-6 @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
       {transactions.map((transaction) => {
         const isEditing = editingId === transaction.id;
         const data = isEditing ? (edited as Transaction) : transaction;
+        const isSelected = selectedIds.has(transaction.id);
 
         return (
           <Card
             key={transaction.id}
-            className="@container/card data-[slot=card]:from-primary/5 data-[slot=card]:to-card dark:data-[slot=card]:bg-card"
+            className={cn(
+              "@container/card data-[slot=card]:from-primary/5 data-[slot=card]:to-card dark:data-[slot=card]:bg-card",
+            )}
           >
             <CardHeader className="relative">
+              <Checkbox
+                checked={isSelected}
+                onClick={() => !isEditing && toggleSelection(transaction.id)}
+                className={cn(`absolute right-2 -top-4 h-4 w-4 rounded-full`)}
+              />
               <div
                 className={cn(
                   `absolute left-2 -top-4 h-2 w-2 rounded-full`,
@@ -96,12 +130,13 @@ export function TransactionCards({
                       ? "bg-green-500"
                       : "bg-red-500",
                   data.status === "pending" &&
-                    "before:absolute before:left-3/6 before:-top-1/6 before:w-4/5 before:h-4/5 before:rounded-full before:-translate-z-0.5",
+                    "before:absolute before:left-[150%] before:bottom-0 before:w-full before:h-full before:rounded-full before:-translate-z-0.5",
                   data.flow === "income"
                     ? "before:bg-green-500/70"
                     : "before:bg-red-500/70",
                 )}
               />
+
               <CardDescription>
                 {data.flow === "income" ? "From " : "To "}
                 {isEditing ? (
@@ -170,7 +205,6 @@ export function TransactionCards({
 
             <CardFooter className="relative flex-col items-start gap-1.5 text-sm">
               <div className="text-muted-foreground">{data.message}</div>
-
               <div className="flex flex-wrap flex-row gap-2 pt-4">
                 {isEditing ? (
                   <Select

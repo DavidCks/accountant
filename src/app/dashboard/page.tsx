@@ -9,7 +9,7 @@ import {
   QueryClientProvider,
 } from "@tanstack/react-query";
 import { SB } from "../_accountant-supabase_/client";
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import AddTransactionForm from "../__components__/add-transaction-form";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
@@ -20,6 +20,10 @@ import { usePathname } from "next/navigation";
 import { DialogTitle } from "@radix-ui/react-dialog";
 import TransactionsSum from "../__components__/transactions-sum";
 import { useAuthEffect } from "@/lib/__supabase__/__hooks__/useAuthEffect";
+import { Transaction } from "../__types__/Transaction";
+import TransactionsFilter from "../__components__/transactions-filter";
+import TransactionsDiff from "../__components__/transactions-diff";
+import { cn } from "@/lib/utils";
 
 const queryClient = new QueryClient();
 
@@ -48,6 +52,19 @@ const PageImpl = () => {
   const pathname = usePathname();
   const [initialLoad, setInitialLoad] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [selectedTxs, setSelectedTxs] = useState<Transaction[]>([]);
+  const [filterFn, setFilterFn] = useState<
+    (txs: Transaction[]) => Transaction[]
+  >(() => (txs: Transaction[]) => txs);
+  const filteredTransactions = useMemo(() => {
+    if (!transactionsMutation?.data?.value?.txs) {
+      return [];
+    }
+    return filterFn(transactionsMutation.data.value.txs).sort(
+      (a, b) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+    );
+  }, [filterFn, transactionsMutation?.data?.value?.txs]);
 
   useAuthEffect((event, session) => {
     if (
@@ -199,15 +216,19 @@ const PageImpl = () => {
         />
         <div className="flex flex-1 flex-col">
           <div className="@container/main flex flex-1 flex-col gap-2">
-            <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
+            <div className="flex flex-col gap-4 py-4 md:gap-4 md:py-6">
               {/* Add Transaction Card */}
               {!initialLoad &&
               transactionsMutation.isSuccess &&
               !transactionsMutation.data.error ? (
                 <>
-                  <div className="flex justify-between">
-                    <div></div>
-                    <div></div>
+                  <div className="px-6 flex flex-col">
+                    <TransactionsFilter
+                      onChange={(newFilterFn) => {
+                        setFilterFn(() => newFilterFn);
+                        // Use this filtered list however you'd like
+                      }}
+                    />
                   </div>
                   <Dialog>
                     <DialogTrigger className="mx-6" asChild>
@@ -228,16 +249,30 @@ const PageImpl = () => {
                       />
                     </DialogContent>
                   </Dialog>
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button
+                        className={cn(
+                          "mx-6",
+                          selectedTxs.length === 0
+                            ? "!opacity-0 mb-0 h-0 p-0"
+                            : "!opacity-100 mb-6 h-8 p-4",
+                        )}
+                        variant="outline"
+                        disabled={selectedTxs.length === 0}
+                      >
+                        Calculate Difference
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-[400px]">
+                      <DialogTitle>Transaction Difference</DialogTitle>
+                      <TransactionsDiff transactions={selectedTxs} />
+                    </DialogContent>
+                  </Dialog>
                   <TransactionCards
+                    onSelectionChange={setSelectedTxs}
                     onChange={() => transactionsMutation.mutate()}
-                    transactions={transactionsMutation.data.value.txs.sort(
-                      (a, b) => {
-                        return (
-                          new Date(b.created_at).getTime() -
-                          new Date(a.created_at).getTime()
-                        );
-                      }
-                    )}
+                    transactions={filteredTransactions}
                   />
                 </>
               ) : (!initialLoad && transactionsMutation.isPending) ||
