@@ -95,69 +95,71 @@ export default function TransactionsDiff({
   const net = incomeTotal - expenseTotal;
 
   return (
-    <div className="space-y-4">
-      {/* Currency Selector */}
-      <div className="grid gap-1">
-        <Label className="pb-1" htmlFor="currency_code">
-          Currency
-        </Label>
-        <SelectSearch<string>
-          useRecents={true}
-          name="currency_code"
-          options={Object.keys(currencies)}
-          value={displayCurrency}
-          onChange={(val) => setDisplayCurrency(val)}
-          getLabel={(v) => v}
-          placeholder="Select currency"
-          recentsStorageKey={"RecentCurrencyCodes"}
-        />
-      </div>
-
-      <div id="printable-diff" className="print:p-16" ref={componentRef}>
-        {/* Totals */}
-        <div className="space-y-2 text-sm border-b pb-2">
-          <div>Total Transactions: {transactions.length}</div>
-          <div>
-            Incoming:{" "}
-            <span className="text-green-600 font-medium">
-              {incomeTotal.toLocaleString("en-US", {
-                style: "currency",
-                currency: displayCurrency,
-                minimumFractionDigits: 6,
-                maximumFractionDigits: 6,
-              })}
-            </span>
-          </div>
-          <div>
-            Outgoing:{" "}
-            <span className="text-red-600 font-medium">
-              {expenseTotal.toLocaleString("en-US", {
-                style: "currency",
-                currency: displayCurrency,
-                minimumFractionDigits: 6,
-                maximumFractionDigits: 6,
-              })}
-            </span>
-          </div>
-          <div className="font-semibold text-base">
-            Net Difference:{" "}
-            <span className={net >= 0 ? "text-green-600" : "text-red-600"}>
-              {net.toLocaleString("en-US", {
-                style: "currency",
-                currency: displayCurrency,
-                minimumFractionDigits: 6,
-                maximumFractionDigits: 6,
-              })}
-            </span>
-          </div>
+    <>
+      <div className="space-y-4 max-h-[50svh] my-4 overflow-auto">
+        {/* Currency Selector */}
+        <div className="grid gap-1">
+          <Label className="pb-1" htmlFor="currency_code">
+            Currency
+          </Label>
+          <SelectSearch<string>
+            useRecents={true}
+            name="currency_code"
+            options={Object.keys(currencies)}
+            value={displayCurrency}
+            onChange={(val) => setDisplayCurrency(val)}
+            getLabel={(v) => v}
+            placeholder="Select currency"
+            recentsStorageKey={"RecentCurrencyCodes"}
+          />
         </div>
 
-        {/* Line Items */}
-        <div className="divide-y">{rows}</div>
+        <div id="printable-diff" className="print:p-16" ref={componentRef}>
+          {/* Totals */}
+          <div className="space-y-2 text-sm border-b pb-2">
+            <div>Total Transactions: {transactions.length}</div>
+            <div>
+              Incoming:{" "}
+              <span className="text-green-600 font-medium">
+                {incomeTotal.toLocaleString("en-US", {
+                  style: "currency",
+                  currency: displayCurrency,
+                  minimumFractionDigits: 6,
+                  maximumFractionDigits: 6,
+                })}
+              </span>
+            </div>
+            <div>
+              Outgoing:{" "}
+              <span className="text-red-600 font-medium">
+                {expenseTotal.toLocaleString("en-US", {
+                  style: "currency",
+                  currency: displayCurrency,
+                  minimumFractionDigits: 6,
+                  maximumFractionDigits: 6,
+                })}
+              </span>
+            </div>
+            <div className="font-semibold text-base">
+              Net Difference:{" "}
+              <span className={net >= 0 ? "text-green-600" : "text-red-600"}>
+                {net.toLocaleString("en-US", {
+                  style: "currency",
+                  currency: displayCurrency,
+                  minimumFractionDigits: 6,
+                  maximumFractionDigits: 6,
+                })}
+              </span>
+            </div>
+          </div>
+
+          {/* Line Items */}
+          <div className="divide-y">{rows}</div>
+        </div>
       </div>
       <Button variant="outline" onClick={handlePrint}>
         Print
       </Button>
-    </div>
+    </>
   );
 }
