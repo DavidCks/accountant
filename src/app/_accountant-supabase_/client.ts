@@ -190,13 +190,6 @@ export class SB extends Supabase {
     FReturn<{ code: CurrencyCode; rateUSD: number; recorded_at: string }>
   > {
     Supabase.ensureInitialized();
-    const user = await Supabase.getCurrentUser();
-    if (user.error) {
-      return {
-        value: null,
-        error: user.error,
-      };
-    }
 
     const targetDate = new Date(date);
     const startDate = new Date(targetDate);
