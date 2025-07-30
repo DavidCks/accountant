@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { IoAddOutline } from "react-icons/io5";
 import { RxUpdate } from "react-icons/rx";
 
-import { currencies } from "@/app/__types__/generated/Currencies";
+import { currencies, CurrencyCode } from "@/app/__types__/generated/Currencies";
 import { SelectSearch } from "@/components/select-search";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -38,6 +38,7 @@ import { Transaction } from "../__types__/Transaction";
 import { SB } from "../_accountant-supabase_/client";
 import { cn } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
+import { FaSpinner } from "react-icons/fa";
 
 export function TransactionCards({
   transactions,
@@ -52,11 +53,6 @@ export function TransactionCards({
   const [edited, setEdited] = useState<Partial<Transaction>>({});
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
-  // @typescript-eslint/no-explicit-any
-  const handleChange = (field: keyof Transaction, value: any) => {
-    setEdited((prev) => ({ ...prev, [field]: value }));
-  };
-
   const startEditing = (transaction: Transaction) => {
     setEditingId(transaction.id);
     setEdited(transaction);
@@ -67,11 +63,9 @@ export function TransactionCards({
     setEdited({});
   };
 
-  const saveChanges = async (oldTransaction: Transaction) => {
-    console.log("Save this transaction:", edited);
+  const saveChanges = async (transaction: Transaction) => {
     const updatedTransaction = {
-      ...oldTransaction,
-      ...edited,
+      ...transaction,
       updated_at: new Date().toISOString(),
     };
     await SB.updateTransaction(updatedTransaction);
@@ -109,200 +103,292 @@ export function TransactionCards({
         const isSelected = selectedIds.has(transaction.id);
 
         return (
-          <Card
+          <TransactionCard
             key={transaction.id}
-            className={cn(
-              "@container/card data-[slot=card]:from-primary/5 data-[slot=card]:to-card dark:data-[slot=card]:bg-card",
-            )}
-          >
-            <CardHeader className="relative">
-              <Checkbox
-                checked={isSelected}
-                onClick={() => !isEditing && toggleSelection(transaction.id)}
-                className={cn(`absolute right-2 -top-4 h-4 w-4 rounded-full`)}
-              />
-              <div
-                className={cn(
-                  `absolute left-2 -top-4 h-2 w-2 rounded-full`,
-                  data.status === "pending"
-                    ? "bg-yellow-500 transform-3d"
-                    : data.flow === "income"
-                      ? "bg-green-500"
-                      : "bg-red-500",
-                  data.status === "pending" &&
-                    "before:absolute before:left-[150%] before:bottom-0 before:w-full before:h-full before:rounded-full before:-translate-z-0.5",
-                  data.flow === "income"
-                    ? "before:bg-green-500/70"
-                    : "before:bg-red-500/70",
-                )}
-              />
-
-              <CardDescription>
-                {data.flow === "income" ? "From " : "To "}
-                {isEditing ? (
-                  <Input
-                    value={data.participant ?? "secret"}
-                    onChange={(e) =>
-                      handleChange("participant", e.target.value)
-                    }
-                  />
-                ) : (
-                  data.participant
-                )}
-              </CardDescription>
-
-              <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-                {isEditing ? (
-                  <Input
-                    type="number"
-                    value={data.amount}
-                    onChange={(e) => handleChange("amount", e.target.value)}
-                  />
-                ) : (
-                  <>
-                    {data.amount}{" "}
-                    {
-                      Object.entries(currencies).find(
-                        (c) => c[1].code === data.currency_code,
-                      )![1].symbol
-                    }
-                  </>
-                )}
-              </CardTitle>
-
-              {isEditing ? (
-                <SelectSearch<string>
-                  useRecents={true}
-                  name="currency_code"
-                  options={Object.keys(currencies)}
-                  value={data.currency_code}
-                  onChange={(val: string) => handleChange("currency_code", val)}
-                  // value={selected}
-                  // onChange={setSelected}
-                  getLabel={(v) => v}
-                  placeholder="Select currency"
-                  recentsStorageKey={"RecentCurrencyCodes"}
-                />
-              ) : null}
-
-              <CardAction className="flex flex-col gap-2">
-                <Badge variant="outline">
-                  <IoAddOutline />{" "}
-                  {new Date(data.created_at).toLocaleDateString("en-US", {
-                    month: "short",
-                    day: "2-digit",
-                  })}
-                </Badge>
-                <Badge variant="outline">
-                  <RxUpdate />
-                  {new Date(data.updated_at).toLocaleDateString("en-US", {
-                    month: "short",
-                    day: "2-digit",
-                  })}
-                </Badge>
-              </CardAction>
-            </CardHeader>
-
-            <CardFooter className="relative flex-col items-start gap-1.5 text-sm">
-              <div className="text-muted-foreground">{data.message}</div>
-              <div className="flex flex-wrap flex-row gap-2 pt-4">
-                {isEditing ? (
-                  <Select
-                    value={data.payment_type}
-                    onValueChange={(val) => handleChange("payment_type", val)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Payment Type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="one_time">One Time</SelectItem>
-                      <SelectItem value="subscription">Subscription</SelectItem>
-                    </SelectContent>
-                  </Select>
-                ) : (
-                  <Badge variant="outline">
-                    {data.payment_type === "one_time"
-                      ? "One time"
-                      : "Subscription"}
-                  </Badge>
-                )}
-
-                {isEditing ? (
-                  <Select
-                    value={data.status}
-                    onValueChange={(val) => handleChange("status", val)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="done">Done</SelectItem>
-                    </SelectContent>
-                  </Select>
-                ) : (
-                  <Badge variant="outline">
-                    {data.status === "pending" ? "Pending" : "Done"}
-                  </Badge>
-                )}
-              </div>
-
-              <div className="pt-4 flex gap-2">
-                {isEditing ? (
-                  <>
-                    <Button
-                      variant="outline"
-                      onClick={() => saveChanges(transaction)}
-                    >
-                      Save
-                    </Button>
-                    <Button variant="ghost" onClick={stopEditing}>
-                      Cancel
-                    </Button>
-                  </>
-                ) : (
-                  <>
-                    {" "}
-                    <Button
-                      variant="outline"
-                      onClick={() => startEditing(transaction)}
-                    >
-                      Edit
-                    </Button>
-                    {/* Delete Dialog */}
-                    <Dialog>
-                      <DialogTrigger asChild>
-                        <Button variant="ghost">Delete</Button>
-                      </DialogTrigger>
-                      <DialogContent className="sm:max-w-[425px]">
-                        <DialogHeader>
-                          <DialogTitle>Are you sure?</DialogTitle>
-                          <DialogDescription>
-                            Deleting this transaction will permanently remove
-                            it.
-                          </DialogDescription>
-                        </DialogHeader>
-                        <DialogFooter>
-                          <Button
-                            onClick={async () => {
-                              await SB.deleteTransaction(transaction);
-                              onChange(transaction);
-                            }}
-                            variant="destructive"
-                            type="submit"
-                          >
-                            Delete transaction
-                          </Button>
-                        </DialogFooter>
-                      </DialogContent>
-                    </Dialog>
-                  </>
-                )}
-              </div>
-            </CardFooter>
-          </Card>
+            transaction={data}
+            isSelected={isSelected}
+            isEditing={isEditing}
+            currencies={currencies}
+            startEditing={startEditing}
+            stopEditing={stopEditing}
+            saveChanges={saveChanges}
+            toggleSelection={toggleSelection}
+            onChange={onChange}
+          />
         );
       })}
     </div>
   );
 }
+
+type Props = {
+  transaction: Transaction;
+  isSelected: boolean;
+  isEditing: boolean;
+  currencies: Record<string, { code: CurrencyCode; symbol: string }>;
+  startEditing: (tx: Transaction) => void;
+  stopEditing: () => void;
+  saveChanges: (tx: Transaction) => Promise<void>;
+  toggleSelection: (id: string) => void;
+  onChange: (tx: Transaction) => void;
+};
+
+export const TransactionCard = ({
+  transaction,
+  isSelected,
+  isEditing,
+  currencies,
+  startEditing,
+  stopEditing,
+  saveChanges,
+  toggleSelection,
+  onChange,
+}: Props) => {
+  const [data, setData] = useState(transaction);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleChange = <K extends keyof Transaction>(
+    key: K,
+    value: Transaction[K],
+  ) => setData((prev) => ({ ...prev, [key]: value }));
+
+  const [convertedAmount, setConvertedAmount] = useState<string | null>(null);
+  const [offsetDays, setOffsetDays] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!isEditing) {
+      SB.convertTx(transaction, "USD").then((res) => {
+        if (res.value) {
+          setConvertedAmount(res.value.amount);
+          setOffsetDays((res.value as any).__rateOffsetDays ?? 0);
+        } else {
+          console.error(res.error);
+        }
+      });
+    }
+  }, [transaction, isEditing]);
+
+  return (
+    <Card
+      key={transaction.id}
+      className={cn(
+        "@container/card data-[slot=card]:from-primary/5 data-[slot=card]:to-card dark:data-[slot=card]:bg-card",
+      )}
+    >
+      <CardHeader className="relative">
+        <Checkbox
+          checked={isSelected}
+          onClick={() => !isEditing && toggleSelection(transaction.id)}
+          className="absolute right-2 -top-4 h-4 w-4 rounded-full"
+        />
+        <div
+          className={cn(
+            `absolute left-2 -top-4 h-2 w-2 rounded-full`,
+            data.status === "pending"
+              ? "bg-yellow-500 transform-3d"
+              : data.flow === "income"
+                ? "bg-green-500"
+                : "bg-red-500",
+            data.status === "pending" &&
+              "before:absolute before:left-[150%] before:bottom-0 before:w-full before:h-full before:rounded-full before:-translate-z-0.5",
+            data.flow === "income"
+              ? "before:bg-green-500/70"
+              : "before:bg-red-500/70",
+          )}
+        />
+
+        <CardDescription>
+          {data.flow === "income" ? "From " : "To "}
+          {isEditing ? (
+            <Input
+              value={data.participant ?? "secret"}
+              onChange={(e) => handleChange("participant", e.target.value)}
+            />
+          ) : (
+            data.participant
+          )}
+        </CardDescription>
+
+        <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
+          {isEditing ? (
+            <Input
+              type="number"
+              value={data.amount}
+              onChange={(e) => handleChange("amount", e.target.value)}
+            />
+          ) : (
+            <>
+              {data.amount} {currencies[data.currency_code]?.symbol}
+              {data.currency_code !== "USD" && (
+                <>
+                  {convertedAmount ? (
+                    <span className="text-sm block text-muted-foreground italic">
+                      ≈ {parseFloat(convertedAmount).toFixed(2)} USD{" "}
+                      {offsetDays && offsetDays > 0 ? (
+                        <span
+                          className={cn(
+                            offsetDays === 1 &&
+                              "dark:bg-yellow-700 bg-yellow-400",
+                            offsetDays > 1 && "dark:bg-red-900 bg-red-400",
+                            "text-xs rounded-full px-2 py-0.5 mx-2 font-black",
+                          )}
+                          title={`Exchange rate is from ${offsetDays} day${offsetDays > 1 ? "s" : ""} off`}
+                        >
+                          {offsetDays}d
+                        </span>
+                      ) : null}
+                    </span>
+                  ) : (
+                    <span className="w-12 h-4 block animate-pulse rounded-full bg-gray-500"></span>
+                  )}
+                </>
+              )}
+            </>
+          )}
+        </CardTitle>
+
+        {isEditing && (
+          <SelectSearch<string>
+            useRecents
+            name="currency_code"
+            options={Object.keys(currencies)}
+            value={data.currency_code}
+            onChange={(val: string) =>
+              handleChange("currency_code", val as CurrencyCode)
+            }
+            getLabel={(v) => v}
+            placeholder="Select currency"
+            recentsStorageKey={"RecentCurrencyCodes"}
+          />
+        )}
+
+        <CardAction className="flex flex-col gap-2">
+          <Badge variant="outline">
+            <IoAddOutline />{" "}
+            {new Date(data.created_at).toLocaleDateString("en-US", {
+              month: "short",
+              day: "2-digit",
+            })}
+          </Badge>
+          <Badge variant="outline">
+            <RxUpdate />
+            {new Date(data.updated_at).toLocaleDateString("en-US", {
+              month: "short",
+              day: "2-digit",
+            })}
+          </Badge>
+        </CardAction>
+      </CardHeader>
+
+      <CardFooter className="relative flex-col items-start gap-1.5 text-sm">
+        <div className="text-muted-foreground">{data.message}</div>
+        <div className="flex flex-wrap gap-2 pt-4">
+          {isEditing ? (
+            <Select
+              value={data.payment_type}
+              onValueChange={(val) =>
+                handleChange("payment_type", val as Transaction["payment_type"])
+              }
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Payment Type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="one_time">One Time</SelectItem>
+                <SelectItem value="subscription">Subscription</SelectItem>
+              </SelectContent>
+            </Select>
+          ) : (
+            <Badge variant="outline">
+              {data.payment_type === "one_time" ? "One time" : "Subscription"}
+            </Badge>
+          )}
+
+          {isEditing ? (
+            <Select
+              value={data.status}
+              onValueChange={(val) =>
+                handleChange("status", val as Transaction["status"])
+              }
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="pending">Pending</SelectItem>
+                <SelectItem value="done">Done</SelectItem>
+              </SelectContent>
+            </Select>
+          ) : (
+            <Badge variant="outline">
+              {data.status === "pending" ? "Pending" : "Done"}
+            </Badge>
+          )}
+        </div>
+
+        <div className="pt-4 flex gap-2">
+          {isEditing ? (
+            <>
+              <Button
+                variant="outline"
+                onClick={async () => {
+                  setIsSaving(true);
+                  await saveChanges(data);
+                  setIsSaving(false);
+                }}
+                disabled={isSaving}
+              >
+                {isSaving ? (
+                  <>
+                    {"Save"}{" "}
+                    <span className="animate-spin">
+                      <FaSpinner></FaSpinner>
+                    </span>
+                  </>
+                ) : (
+                  "Save"
+                )}
+              </Button>
+              <Button disabled={isSaving} variant="ghost" onClick={stopEditing}>
+                Cancel
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button
+                variant="outline"
+                onClick={() => startEditing(transaction)}
+              >
+                Edit
+              </Button>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="ghost">Delete</Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Are you sure?</DialogTitle>
+                    <DialogDescription>
+                      This will permanently delete the transaction.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <DialogFooter>
+                    <Button
+                      variant="destructive"
+                      onClick={async () => {
+                        await SB.deleteTransaction(transaction);
+                        onChange(transaction);
+                      }}
+                    >
+                      Delete transaction
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </>
+          )}
+        </div>
+      </CardFooter>
+    </Card>
+  );
+};

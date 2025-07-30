@@ -1,6 +1,74 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 
 Deno.serve(async () => {
+  const shouldProceedWithExchangeUpdate = async (
+    SUPABASE_URL: string,
+    SUPABASE_SERVICE_ROLE_KEY: string,
+  ) => {
+    const now = new Date();
+    const usaNow = new Date(
+      now.toLocaleString("en-US", { timeZone: "America/New_York" }),
+    );
+
+    // Fetch the latest recorded timestamp from history
+    const historyRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/currency_exchange_history?select=recorded_at&order=recorded_at.desc&limit=1`,
+      {
+        headers: {
+          apikey: SUPABASE_SERVICE_ROLE_KEY,
+          Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+          "Content-Type": "application/json",
+        },
+      },
+    );
+
+    if (!historyRes.ok) {
+      const errText = await historyRes.text();
+      console.error("Failed to query currency_exchange_history:", errText);
+      return {
+        value: false,
+        response: new Response(
+          JSON.stringify({
+            error: "Failed to query exchange history.",
+            details: errText,
+          }),
+          { status: 500, headers: { "Content-Type": "application/json" } },
+        ),
+      };
+    }
+
+    const history = await historyRes.json();
+
+    if (history.length === 0) {
+      return { value: true, response: null }; // No prior updates → proceed
+    }
+
+    const lastRecorded = new Date(history[0].recorded_at);
+    const elapsedMs = usaNow.getTime() - lastRecorded.getTime();
+    const minIntervalMs = 23.83 * 60 * 60 * 1000; // ≈ 23h50m
+
+    if (elapsedMs < minIntervalMs) {
+      const waitMinutes = Math.ceil((minIntervalMs - elapsedMs) / 60000);
+      return {
+        value: false,
+        response: new Response(
+          JSON.stringify({
+            error: "Exchange rates can only be updated once per 24 hours.",
+            lastRecorded: lastRecorded.toISOString(),
+            now: usaNow.toISOString(),
+            waitMinutes,
+          }),
+          {
+            status: 429,
+            headers: { "Content-Type": "application/json" },
+          },
+        ),
+      };
+    }
+
+    return { value: true, response: null };
+  };
+
   try {
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
@@ -9,6 +77,12 @@ Deno.serve(async () => {
     if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY || !EXCHANGE_API_KEY) {
       throw new Error("Missing required environment variables.");
     }
+
+    const check = await shouldProceedWithExchangeUpdate(
+      SUPABASE_URL,
+      SUPABASE_SERVICE_ROLE_KEY,
+    );
+    if (check.response) return check.response;
 
     // Step 1: Get all fiat currencies from Supabase
     const fiatRes = await fetch(
@@ -19,7 +93,7 @@ Deno.serve(async () => {
           Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
           "Content-Type": "application/json",
         },
-      }
+      },
     );
 
     if (!fiatRes.ok) {
@@ -36,25 +110,26 @@ Deno.serve(async () => {
         JSON.stringify({ message: "No fiat currencies found." }),
         {
           headers: { "Content-Type": "application/json" },
-        }
+        },
       );
     }
 
     // Step 3: Fetch exchange rates from API
     const exchangeRes = await fetch(
-      `https://api.exchangeratesapi.io/v1/latest?access_key=${EXCHANGE_API_KEY}`
+      `https://api.exchangeratesapi.io/v1/latest?access_key=${EXCHANGE_API_KEY}`,
     );
     const exchangeData = await exchangeRes.json();
 
     if (!exchangeData.success) {
       throw new Error(
-        `Exchange rate API error: ${JSON.stringify(exchangeData.error)}`
+        `Exchange rate API error: ${JSON.stringify(exchangeData.error)}`,
       );
     }
 
     const rates = exchangeData.rates;
 
     const eurToUsd = 1 / rates["USD"];
+
     // Step 4: For each currency, update the exchange_rate
     const updates = await Promise.all(
       fiatCurrencies.map(async (currency: any) => {
@@ -72,18 +147,48 @@ Deno.serve(async () => {
               Prefer: "return=representation",
             },
             body: JSON.stringify({ exchange_rate: newRate * eurToUsd }),
-          }
+          },
         );
 
         if (!patchRes.ok) {
           console.error(
-            `Failed to update ${currency.code}: ${await patchRes.text()}`
+            `Failed to update ${currency.code}: ${await patchRes.text()}`,
           );
           return null;
         }
 
-        return await patchRes.json();
-      })
+        const [updatedCurrency] = await patchRes.json();
+
+        // Insert into history table
+        const postRes = await fetch(
+          `${SUPABASE_URL}/rest/v1/currency_exchange_history`,
+          {
+            method: "POST",
+            headers: {
+              apikey: SUPABASE_SERVICE_ROLE_KEY,
+              Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              code: updatedCurrency.code,
+              name: updatedCurrency.name,
+              type: updatedCurrency.type,
+              symbol: updatedCurrency.symbol,
+              region: updatedCurrency.region,
+              exchange_rate: updatedCurrency.exchange_rate,
+            }),
+          },
+        );
+
+        if (!postRes.ok) {
+          console.error(
+            `Failed to update historical ${currency.code}: ${await patchRes.text()}`,
+          );
+          return null;
+        }
+
+        return updatedCurrency;
+      }),
     );
 
     // Step 4: Fetch crypto currencies
@@ -95,12 +200,12 @@ Deno.serve(async () => {
           Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
           "Content-Type": "application/json",
         },
-      }
+      },
     );
 
     if (!cryptoRes.ok) {
       throw new Error(
-        `Failed to query crypto currencies: ${await cryptoRes.text()}`
+        `Failed to query crypto currencies: ${await cryptoRes.text()}`,
       );
     }
 
@@ -111,7 +216,7 @@ Deno.serve(async () => {
     const cryptoMarketData = await cryptoMarketRes.json();
 
     const cryptoRatesMapUSD = Object.fromEntries(
-      cryptoMarketData.map((c: any) => [c.symbol.toUpperCase(), c.price])
+      cryptoMarketData.map((c: any) => [c.symbol.toUpperCase(), c.price]),
     );
 
     // Step 6: Update crypto exchange rates
@@ -131,18 +236,48 @@ Deno.serve(async () => {
               Prefer: "return=representation",
             },
             body: JSON.stringify({ exchange_rate: 1 / priceUSD }),
-          }
+          },
         );
 
         if (!patchRes.ok) {
           console.error(
-            `Failed to update ${currency.code}: ${await patchRes.text()}`
+            `Failed to update ${currency.code}: ${await patchRes.text()}`,
           );
           return null;
         }
 
-        return await patchRes.json();
-      })
+        const [updatedCurrency] = await patchRes.json();
+
+        // Insert into history table
+        const postRes = await fetch(
+          `${SUPABASE_URL}/rest/v1/currency_exchange_history`,
+          {
+            method: "POST",
+            headers: {
+              apikey: SUPABASE_SERVICE_ROLE_KEY,
+              Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              code: updatedCurrency.code,
+              name: updatedCurrency.name,
+              type: updatedCurrency.type,
+              symbol: updatedCurrency.symbol,
+              region: updatedCurrency.region,
+              exchange_rate: updatedCurrency.exchange_rate,
+            }),
+          },
+        );
+
+        if (!postRes.ok) {
+          console.error(
+            `Failed to update ${currency.code}: ${await patchRes.text()}`,
+          );
+          return null;
+        }
+
+        return await updatedCurrency;
+      }),
     );
 
     return new Response(
@@ -150,7 +285,7 @@ Deno.serve(async () => {
         message: "Exchange rates updated",
         updated: [...updates, ...cryptoUpdates].filter(Boolean),
       }),
-      { headers: { "Content-Type": "application/json" } }
+      { headers: { "Content-Type": "application/json" } },
     );
   } catch (err: any) {
     console.error(err);
