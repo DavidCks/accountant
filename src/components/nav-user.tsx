@@ -96,7 +96,7 @@ export function NavUser({
             {SB.storedSessions.value &&
               SB.storedSessions.value
                 .filter(
-                  (storedSessionData) => storedSessionData.email !== user.email
+                  (storedSessionData) => storedSessionData.email !== user.email,
                 )
                 .map((storedSessionData) => (
                   <DropdownMenuItem
@@ -115,10 +115,12 @@ export function NavUser({
                           }
                           url.searchParams.set(
                             "email",
-                            storedSessionData.email
+                            storedSessionData.email,
                           );
                           const urlString = url.toString();
                           router.push(urlString);
+                        } else {
+                          window.location.reload();
                         }
                       })
                     }
