@@ -228,9 +228,9 @@ export const TransactionCard = ({
                         <span
                           className={cn(
                             offsetDays === 1 &&
-                              "dark:bg-yellow-700 bg-yellow-400",
+                              "dark:bg-yellow-700 bg-yellow-300",
                             offsetDays > 1 && "dark:bg-red-900 bg-red-400",
-                            "text-xs rounded-full px-2 py-0.5 mx-2 font-black",
+                            "text-xs rounded-full px-2 py-0.5 mx-2 font-black text-foreground not-italic",
                           )}
                           title={`Exchange rate is from ${offsetDays} day${offsetDays > 1 ? "s" : ""} off`}
                         >
