@@ -15,7 +15,7 @@ import AddTransactionForm from "../__components__/add-transaction-form";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { ConfirmMessage } from "@/components/confirm-message";
 import { OnLoadReturnType } from "@/components/confirm-message-controller";
-import { IconListDetails } from "@tabler/icons-react";
+import { IconListDetails, IconReceiptBitcoin } from "@tabler/icons-react";
 import { usePathname } from "next/navigation";
 import { DialogTitle } from "@radix-ui/react-dialog";
 import TransactionsSum from "../__components__/transactions-sum";
@@ -24,6 +24,7 @@ import { Transaction } from "../__types__/Transaction";
 import TransactionsFilter from "../__components__/transactions-filter";
 import TransactionsDiff from "../__components__/transactions-diff";
 import { cn } from "@/lib/utils";
+import { useHashRoute } from "@/hooks/use-hash-route";
 
 const queryClient = new QueryClient();
 
@@ -39,8 +40,13 @@ const navItems = {
   navMain: [
     {
       title: "Transactions",
-      url: "/dashboard",
+      url: ["%F0%9F%A4%9D", "transactions"] as [string, string, ...string[]],
       icon: IconListDetails,
+    },
+    {
+      title: "Taxes",
+      url: ["%F0%9F%92%B8", "taxes"] as [string, string, ...string[]],
+      icon: IconReceiptBitcoin,
     },
   ],
 };
@@ -49,7 +55,10 @@ const PageImpl = () => {
   const transactionsMutation = useMutation({
     mutationFn: SB.getTransactions,
   });
-  const pathname = usePathname();
+  const [hashRoute, setHashRoute] = useHashRoute([
+    "%F0%9F%A4%9D",
+    "transactions",
+  ]);
   const [initialLoad, setInitialLoad] = useState(true);
   const [loading, setLoading] = useState(false);
   const [selectedTxs, setSelectedTxs] = useState<Transaction[]>([]);
@@ -193,8 +202,9 @@ const PageImpl = () => {
               <div className="flex justify-between w-full relative">
                 <span>
                   {
-                    navItems.navMain.find((item) => item.url === pathname)
-                      ?.title
+                    navItems.navMain.find((item) =>
+                      item.url.every((seg, i) => seg === hashRoute[i]),
+                    )?.title
                   }
                 </span>
               </div>

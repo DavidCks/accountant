@@ -16,7 +16,6 @@ import {
 } from "@/components/ui/sidebar";
 import { ReactNode, useState } from "react";
 import { Supabase } from "@/lib/__supabase__/supabase";
-import { usePathname } from "next/navigation";
 import { useAuthEffect } from "@/lib/__supabase__/__hooks__/useAuthEffect";
 import Link from "next/link";
 
@@ -24,7 +23,7 @@ export type AppSidebarProps = React.ComponentProps<typeof Sidebar> & {
   SB: typeof Supabase;
   navMain: {
     title: string;
-    url: string;
+    url: [string, string, ...string[]];
     icon?: Icon;
   }[];
   navSecondary?: {
@@ -52,7 +51,6 @@ export function AppSidebar({
 }: AppSidebarProps) {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [errorCode, setErrorCode] = useState<string | number | null>(null);
-  const pathname = usePathname();
   const [user, setUser] = useState<{
     email: string;
   } | null>(null);
@@ -94,7 +92,7 @@ export function AppSidebar({
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={navMain} activeUrl={pathname} />
+        <NavMain items={navMain} />
         {documents && <NavDocuments items={documents} />}
         {navSecondary && (
           <NavSecondary items={navSecondary} className="mt-auto" />
