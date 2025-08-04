@@ -41,6 +41,12 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { FaSpinner } from "react-icons/fa";
 import { toast } from "@/components/toast";
 import { IconCircleDashedPlus, IconPaperclip } from "@tabler/icons-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 export function TransactionCards({
   transactions,
@@ -148,6 +154,7 @@ export const TransactionCard = ({
 }: Props) => {
   const [data, setData] = useState(transaction);
   const [isSaving, setIsSaving] = useState(false);
+  const [baseCurrency, setBaseCurrency] = useState<CurrencyCode>("USD");
 
   const handleChange = <K extends keyof Transaction>(
     key: K,
@@ -159,14 +166,18 @@ export const TransactionCard = ({
 
   useEffect(() => {
     if (!isEditing) {
-      SB.convertTx(transaction, "USD").then((res) => {
-        if (res.value) {
-          setConvertedAmount(res.value.amount);
-          setOffsetDays((res.value as any).__rateOffsetDays ?? 0);
+      const converter = async () => {
+        const userBaseCurrency = await SB.getBaseCurrency();
+        setBaseCurrency(userBaseCurrency);
+        const convertedTx = await SB.convertTx(transaction, userBaseCurrency);
+        if (convertedTx.value) {
+          setConvertedAmount(convertedTx.value.amount);
+          setOffsetDays((convertedTx.value as any).__rateOffsetDays ?? 0);
         } else {
-          console.error(res.error);
+          console.error(convertedTx.error);
         }
-      });
+      };
+      converter();
     }
   }, [transaction, isEditing]);
 
@@ -221,23 +232,34 @@ export const TransactionCard = ({
           ) : (
             <>
               {data.amount} {currencies[data.currency_code]?.symbol}
-              {data.currency_code !== "USD" && (
+              {data.currency_code !== baseCurrency && (
                 <>
                   {convertedAmount ? (
                     <span className="text-sm block text-muted-foreground italic">
-                      ≈ {parseFloat(convertedAmount).toFixed(2)} USD{" "}
+                      ≈ {parseFloat(convertedAmount).toFixed(2)}{" "}
+                      {currencies[baseCurrency]?.symbol}{" "}
                       {offsetDays && offsetDays > 0 ? (
-                        <span
-                          className={cn(
-                            offsetDays === 1 &&
-                              "dark:bg-yellow-700 bg-yellow-300",
-                            offsetDays > 1 && "dark:bg-red-900 bg-red-400",
-                            "text-xs rounded-full px-2 py-0.5 mx-2 font-black text-foreground not-italic",
-                          )}
-                          title={`Exchange rate is from ${offsetDays} day${offsetDays > 1 ? "s" : ""} off`}
-                        >
-                          {offsetDays}d
-                        </span>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span
+                                className={cn(
+                                  offsetDays === 1 &&
+                                    "dark:bg-yellow-700 bg-yellow-300",
+                                  offsetDays > 1 &&
+                                    "dark:bg-red-900 bg-red-400",
+                                  "text-xs rounded-full px-2 py-0.5 mx-2 font-black text-foreground not-italic",
+                                )}
+                              >
+                                {offsetDays}d
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent side="top">
+                              {`Exchange rate is ${offsetDays} day${offsetDays !== 1 ? "s" : ""} away from
+                              the latest transaction date.`}
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                       ) : null}
                     </span>
                   ) : (

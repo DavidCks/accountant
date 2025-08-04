@@ -502,6 +502,81 @@ export class SB extends Supabase {
 
     return resultPromise;
   }
+  static async getBaseCurrency(): Promise<CurrencyCode> {
+    Supabase.ensureInitialized();
+
+    const raw = localStorage.getItem("baseCurrency");
+    if (raw) {
+      try {
+        const parsed = JSON.parse(raw);
+        const age = Date.now() - parsed.savedAt;
+        if (age < 60 * 60 * 1000) {
+          return parsed.code as CurrencyCode;
+        } else {
+          localStorage.removeItem("baseCurrency"); // expired
+        }
+      } catch {
+        localStorage.removeItem("baseCurrency"); // corrupted
+      }
+    }
+
+    const user = await Supabase.getCurrentUser();
+    if (!user.error) {
+      const code = user.value.user_metadata?.base_currency;
+      if (code) {
+        localStorage.setItem(
+          "baseCurrency",
+          JSON.stringify({ code, savedAt: Date.now() }),
+        );
+        return code as CurrencyCode;
+      }
+    }
+
+    return "USD";
+  }
+
+  private static clearConversionCache() {
+    const keysToRemove: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key?.startsWith(this.cachePrefix)) {
+        keysToRemove.push(key);
+      }
+    }
+    for (const key of keysToRemove) {
+      localStorage.removeItem(key);
+    }
+  }
+
+  static async setBaseCurrency(code: CurrencyCode): Promise<FReturn<true>> {
+    Supabase.ensureInitialized();
+    SB.clearConversionCache();
+    localStorage.setItem(
+      "baseCurrency",
+      JSON.stringify({ code, savedAt: Date.now() }),
+    );
+
+    const user = await Supabase.getCurrentUser();
+    if (user.error) {
+      return { value: null, error: user.error };
+    }
+
+    const { error } = await Supabase.client.auth.updateUser({
+      data: { base_currency: code },
+    });
+
+    if (error) {
+      return {
+        value: null,
+        error: {
+          message: error.message,
+          code: error.name ?? "update_failed",
+        },
+      };
+    }
+
+    return { value: true, error: null };
+  }
 }
 
 export const SBInstance = new SB();
