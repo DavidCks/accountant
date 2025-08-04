@@ -39,6 +39,8 @@ import { SB } from "../_accountant-supabase_/client";
 import { cn } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
 import { FaSpinner } from "react-icons/fa";
+import { toast } from "@/components/toast";
+import { IconCircleDashedPlus, IconPaperclip } from "@tabler/icons-react";
 
 export function TransactionCards({
   transactions,
@@ -324,6 +326,12 @@ export const TransactionCard = ({
               {data.status === "pending" ? "Pending" : "Done"}
             </Badge>
           )}
+
+          <ViewAttachmentLink
+            transaction={transaction}
+            isEditing={isEditing}
+            onChange={onChange}
+          />
         </div>
 
         <div className="pt-4 flex gap-2">
@@ -392,3 +400,102 @@ export const TransactionCard = ({
     </Card>
   );
 };
+
+export function ViewAttachmentLink({
+  isEditing,
+  onChange,
+  transaction,
+}: {
+  isEditing: boolean;
+  onChange: (tx: Transaction) => void;
+  transaction: Transaction;
+}) {
+  const [url, setUrl] = useState<string | null>(null);
+  const [loading, setLoading] = useState<boolean>(false);
+
+  useEffect(() => {
+    let active = true;
+    setLoading(true);
+    SB.getTransactionAttachmentUrl(transaction).then((result) => {
+      if (active) {
+        setUrl(result);
+        setLoading(false);
+      }
+    });
+    return () => {
+      active = false;
+    };
+  }, [transaction.id]);
+
+  const baseStyles =
+    "inline-flex items-center justify-center w-7 h-7 rounded-full transition hover:bg-accent hover:text-primary";
+
+  if (loading) {
+    return (
+      <span
+        className={`${baseStyles} text-muted-foreground bg-muted animate-pulse`}
+        title="Loading attachment"
+      >
+        <span className=" block animate-pulse w-4 h-4 bg-gray-500 rounded-full" />
+      </span>
+    );
+  }
+
+  if (!url && !isEditing) {
+    return null;
+    // <span
+    //   className={`${baseStyles} text-muted-foreground bg-muted`}
+    //   title="No attachment"
+    // >
+    //   <IconPaperclip size={16} />
+    // </span>
+  }
+
+  return isEditing ? (
+    <div className="pt-2">
+      <label className="flex items-center gap-2 cursor-pointer text-muted-foreground text-sm">
+        <IconCircleDashedPlus className="hover:text-primary -translate-y-0.5" />
+        <Input
+          type="file"
+          accept="image/*,.pdf"
+          className="hidden"
+          onChange={async (e) => {
+            setLoading(true);
+            const file = e.target.files?.[0];
+            if (!file) return;
+
+            const result = await SB.uploadTransactionAttachment(
+              file,
+              transaction.id,
+            );
+            if (result.error) {
+              toast.error(`Upload failed: ${result.error.message}`);
+              return;
+            }
+
+            const updatedTransaction = {
+              ...transaction,
+              updated_at: new Date().toISOString(),
+            };
+
+            await SB.updateTransaction(updatedTransaction);
+            onChange(updatedTransaction);
+            setLoading(false);
+          }}
+        />
+      </label>
+    </div>
+  ) : (
+    url && (
+      <a
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={`${baseStyles} text-black bg-gray-100 hover:bg-gray-200`}
+        title="View attachment"
+      >
+        <IconPaperclip size={16} />
+      </a>
+    )
+  );
+}

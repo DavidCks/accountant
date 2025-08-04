@@ -176,13 +176,14 @@ Deno.serve(async () => {
               symbol: updatedCurrency.symbol,
               region: updatedCurrency.region,
               exchange_rate: updatedCurrency.exchange_rate,
+              recorded_at: new Date().toISOString(),
             }),
           },
         );
 
         if (!postRes.ok) {
           console.error(
-            `Failed to update historical ${currency.code}: ${await patchRes.text()}`,
+            `Failed to update historical ${currency.code}: ${await postRes.text()}`,
           );
           return null;
         }
@@ -264,14 +265,15 @@ Deno.serve(async () => {
               type: updatedCurrency.type,
               symbol: updatedCurrency.symbol,
               region: updatedCurrency.region,
-              exchange_rate: updatedCurrency.exchange_rate,
+              exchange_rate: 1 / updatedCurrency.exchange_rate,
+              recorded_at: new Date().toISOString(),
             }),
           },
         );
 
         if (!postRes.ok) {
           console.error(
-            `Failed to update ${currency.code}: ${await patchRes.text()}`,
+            `Failed to update ${currency.code}: ${await postRes.text()}`,
           );
           return null;
         }

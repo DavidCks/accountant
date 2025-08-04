@@ -3,6 +3,8 @@ import { Transaction } from "../__types__/Transaction";
 import { FReturn } from "../../lib/__types__/FReturn";
 import { CurrencyCode } from "../__types__/generated/Currencies";
 import { User } from "@supabase/supabase-js";
+import { jsPDF } from "jspdf";
+import { IDB } from "@/lib/__storage__/idb";
 export class SB extends Supabase {
   constructor() {
     super(
@@ -136,6 +138,126 @@ export class SB extends Supabase {
       value: true,
       error: null,
     };
+  }
+
+  static async uploadTransactionAttachment(
+    file: File,
+    transactionId: string,
+  ): Promise<FReturn<{ path: string }>> {
+    Supabase.ensureInitialized();
+
+    const user = await Supabase.getCurrentUser();
+    if (user.error) {
+      return {
+        value: null,
+        error: user.error,
+      };
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      return {
+        value: null,
+        error: {
+          message: "File size exceeds 10MB limit.",
+          code: "file_too_large",
+        },
+      };
+    }
+
+    // Convert to PDF if needed
+    let pdfBlob: Blob;
+    if (file.type === "application/pdf") {
+      pdfBlob = file;
+    } else {
+      const imageBitmap = await createImageBitmap(file);
+      const canvas = document.createElement("canvas");
+      canvas.width = imageBitmap.width;
+      canvas.height = imageBitmap.height;
+
+      const ctx = canvas.getContext("2d");
+      ctx?.drawImage(imageBitmap, 0, 0);
+
+      const imgDataUrl = canvas.toDataURL("image/jpeg");
+
+      const pdf = new jsPDF({
+        orientation:
+          imageBitmap.width > imageBitmap.height ? "landscape" : "portrait",
+        unit: "px",
+        format: [imageBitmap.width, imageBitmap.height],
+      });
+      pdf.addImage(
+        imgDataUrl,
+        "JPEG",
+        0,
+        0,
+        imageBitmap.width,
+        imageBitmap.height,
+      );
+      const pdfArrayBuffer = pdf.output("arraybuffer");
+      pdfBlob = new Blob([pdfArrayBuffer], { type: "application/pdf" });
+    }
+
+    const filePath = `${user.value.id}/${transactionId}/${transactionId}.pdf`;
+
+    const { error } = await Supabase.client.storage
+      .from("attachments")
+      .upload(filePath, pdfBlob, {
+        upsert: true,
+        contentType: "application/pdf",
+      });
+
+    if (error) {
+      return {
+        value: null,
+        error: {
+          message: `${error.message}`,
+          code: `${error.cause || "upload_failed"}`,
+        },
+      };
+    }
+
+    await IDB.deleteBlob(transactionId);
+    await IDB.unmarkNoAttachment(transactionId);
+    await IDB.storeBlob(transactionId, pdfBlob);
+
+    return {
+      value: { path: filePath },
+      error: null,
+    };
+  }
+
+  static async getTransactionAttachmentUrl(
+    tx: Transaction,
+  ): Promise<string | null> {
+    Supabase.ensureInitialized();
+
+    if (await IDB.hasNoAttachment(tx.id)) {
+      return null;
+    }
+
+    const cachedBlob = await IDB.getBlob(tx.id);
+    if (cachedBlob) {
+      return URL.createObjectURL(cachedBlob);
+    }
+
+    const user = await Supabase.getCurrentUser();
+    if (user.error) return null;
+
+    const filePath = `${user.value.id}/${tx.id}/${tx.id}.pdf`;
+
+    const { data, error } = await Supabase.client.storage
+      .from("attachments")
+      .download(filePath);
+
+    if (error || !data) {
+      await IDB.markNoAttachment(tx.id);
+      return null;
+    }
+
+    const blob = data;
+    await IDB.storeBlob(tx.id, blob);
+
+    return URL.createObjectURL(blob);
   }
 
   static async getExchangeRates(): Promise<
