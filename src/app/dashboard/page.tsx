@@ -16,7 +16,6 @@ import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { ConfirmMessage } from "@/components/confirm-message";
 import { OnLoadReturnType } from "@/components/confirm-message-controller";
 import { IconListDetails, IconReceiptBitcoin } from "@tabler/icons-react";
-import { usePathname } from "next/navigation";
 import { DialogTitle } from "@radix-ui/react-dialog";
 import TransactionsSum from "../__components__/transactions-sum";
 import { useAuthEffect } from "@/lib/__supabase__/__hooks__/useAuthEffect";
@@ -55,7 +54,8 @@ const PageImpl = () => {
   const transactionsMutation = useMutation({
     mutationFn: SB.getTransactions,
   });
-  const [hashRoute, setHashRoute] = useHashRoute([
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [hashRoute, _setHashRoute] = useHashRoute([
     "%F0%9F%A4%9D",
     "transactions",
   ]);

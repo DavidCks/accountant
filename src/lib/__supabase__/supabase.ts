@@ -25,7 +25,6 @@ export abstract class Supabase {
    * Supabase client instance.
    * @type {SupabaseClient}
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   static client: SupabaseClient<any, "public", any>;
 
   /**
@@ -47,7 +46,7 @@ export abstract class Supabase {
    * Get the current Supabase client instance.
    * @returns {SupabaseClient}
    */
-  get client() {
+  get client(): SupabaseClient {
     return Supabase.client;
   }
 
@@ -64,7 +63,6 @@ export abstract class Supabase {
    * Set the Supabase client instance.
    * @param {SupabaseClient} client - The Supabase client.
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   set client(client: SupabaseClient<any, "public", any>) {
     Supabase.client = client;
   }
@@ -105,7 +103,7 @@ export abstract class Supabase {
    * A function to be called on each auth state change.
    */
   static onAuthChange(
-    listener: (event: string, session: Session | null) => void
+    listener: (event: string, session: Session | null) => void,
   ): void {
     Supabase.ensureInitialized();
 
@@ -121,10 +119,10 @@ export abstract class Supabase {
    * The same listener function that was passed to `onAuthChange`.
    */
   static offAuthChange(
-    listener: (event: string, session: Session | null) => void
+    listener: (event: string, session: Session | null) => void,
   ): void {
     Supabase._customAuthListeners = Supabase._customAuthListeners.filter(
-      (fn) => fn !== listener
+      (fn) => fn !== listener,
     );
   }
 
@@ -157,7 +155,7 @@ export abstract class Supabase {
           }
         }
         authEvents.emit(event, session);
-      }
+      },
     );
 
     Supabase._authSubscription = data.subscription;
@@ -331,7 +329,7 @@ export abstract class Supabase {
   static async signUp(
     email: string,
     password: string,
-    redirectTo: string
+    redirectTo: string,
   ): Promise<
     FReturn<{
       user: User;
@@ -490,7 +488,7 @@ export abstract class Supabase {
       console.error(
         error instanceof Error
           ? error.message
-          : `An error occurred while restoring the session for ${email}`
+          : `An error occurred while restoring the session for ${email}`,
       );
       return {
         value: null,
@@ -581,7 +579,7 @@ export abstract class Supabase {
    */
   static async signIn(
     email: string,
-    password: string
+    password: string,
   ): Promise<
     FReturn<{
       user: User;
@@ -628,7 +626,7 @@ export abstract class Supabase {
       if (result.data.user.email) {
         const storeResult = Supabase.storeSession(
           result.data.user.email,
-          result.data.session
+          result.data.session,
         );
         if (storeResult.error) {
           console.warn("Warning: Storing the session failed");
