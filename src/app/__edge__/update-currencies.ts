@@ -175,7 +175,7 @@ Deno.serve(async () => {
               type: updatedCurrency.type,
               symbol: updatedCurrency.symbol,
               region: updatedCurrency.region,
-              exchange_rate: updatedCurrency.exchange_rate,
+              exchange_rate: 1 / updatedCurrency.exchange_rate,
               recorded_at: new Date().toISOString(),
             }),
           },
