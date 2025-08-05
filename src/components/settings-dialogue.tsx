@@ -10,6 +10,7 @@ import { useEffect, useState } from "react";
 import { SelectSearch } from "./select-search";
 import { currencies, CurrencyCode } from "@/app/__types__/generated/Currencies";
 import { SB } from "@/app/_accountant-supabase_/client";
+import { IconLoader2 } from "@tabler/icons-react";
 
 export function SettingsDialog({
   open,
@@ -19,6 +20,7 @@ export function SettingsDialog({
   onClose: () => void;
 }) {
   const [currency, setCurrency] = useState<CurrencyCode>("USD");
+  const [loading, setLoading] = useState<boolean>(false);
 
   useEffect(() => {
     SB.getBaseCurrency().then((val) => {
@@ -29,8 +31,10 @@ export function SettingsDialog({
   }, []);
 
   const saveCurrency = async (val: CurrencyCode) => {
+    setLoading(true);
     setCurrency(val);
     await SB.setBaseCurrency(val);
+    setLoading(false);
     window.location.reload();
   };
 
@@ -52,6 +56,7 @@ export function SettingsDialog({
             placeholder="Select currency"
             recentsStorageKey={"RecentCurrencyCodes"}
           />
+          {loading && <IconLoader2 className="animate-spin" />}
         </div>
         <DialogFooter className="mt-4">
           <Button onClick={() => onClose()}>Close</Button>

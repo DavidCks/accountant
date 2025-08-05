@@ -40,7 +40,11 @@ import { cn } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
 import { FaSpinner } from "react-icons/fa";
 import { toast } from "@/components/toast";
-import { IconCircleDashedPlus, IconPaperclip } from "@tabler/icons-react";
+import {
+  IconCircleDashedPlus,
+  IconLoader2,
+  IconPaperclip,
+} from "@tabler/icons-react";
 import {
   Tooltip,
   TooltipContent,
@@ -93,6 +97,35 @@ export function TransactionCards({
     });
   };
 
+  const [updatingTxs, setUpdatingTxs] = useState<boolean>(false);
+  const updateSelectedStatus = async (status: "done" | "pending") => {
+    const selectedTransactions = transactions.filter((t) =>
+      selectedIds.has(t.id),
+    );
+
+    setUpdatingTxs(true);
+    await Promise.all(
+      selectedTransactions.map(async (tx) => {
+        const updatedTx = {
+          ...tx,
+          status: status,
+          updated_at: new Date().toISOString(),
+        };
+        const txRes = await SB.updateTransaction(updatedTx);
+        if (txRes.value) {
+          onChange(updatedTx);
+          toast.success(
+            `Succesfully set TX ${updatedTx.amount} ${updatedTx.currency_code} from ${updatedTx.created_at} to ${status}`,
+          );
+        } else {
+          toast.error(txRes.error.message);
+        }
+      }),
+    );
+    setUpdatingTxs(false);
+    setSelectedIds(new Set());
+  };
+
   useEffect(() => {
     if (selectedIds.size > 0) {
       setSelectedIds(new Set());
@@ -104,28 +137,54 @@ export function TransactionCards({
   }, [selectedIds, onSelectionChange]);
 
   return (
-    <div className="*:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card grid grid-cols-1 gap-4 px-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:shadow-xs lg:px-6 @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
-      {transactions.map((transaction) => {
-        const isEditing = editingId === transaction.id;
-        const data = isEditing ? (edited as Transaction) : transaction;
-        const isSelected = selectedIds.has(transaction.id);
+    <>
+      {selectedIds.size > 0 && (
+        <div className="flex gap-4 px-6">
+          <Button
+            variant={"outline"}
+            className="bg-green-500 hover:bg-green-700 text-white"
+            onClick={() => updateSelectedStatus("done")}
+            disabled={updatingTxs || selectedIds.size === 0}
+          >
+            Set to Done
+            <span className="bg-green-500 rounded-full h-2 w-2 ms-2"></span>
+          </Button>
+          <Button
+            variant={"outline"}
+            onClick={() => updateSelectedStatus("pending")}
+            disabled={updatingTxs || selectedIds.size === 0}
+          >
+            Set to Pending{" "}
+            <span className="bg-yellow-500 rounded-full h-2 w-2 ms-2"></span>
+          </Button>
+          {updatingTxs && (
+            <IconLoader2 className="self-center animate-spin opacity-50" />
+          )}
+        </div>
+      )}
+      <div className="*:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card grid grid-cols-1 gap-4 px-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:shadow-xs lg:px-6 @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
+        {transactions.map((transaction) => {
+          const isEditing = editingId === transaction.id;
+          const data = isEditing ? (edited as Transaction) : transaction;
+          const isSelected = selectedIds.has(transaction.id);
 
-        return (
-          <TransactionCard
-            key={transaction.id}
-            transaction={data}
-            isSelected={isSelected}
-            isEditing={isEditing}
-            currencies={currencies}
-            startEditing={startEditing}
-            stopEditing={stopEditing}
-            saveChanges={saveChanges}
-            toggleSelection={toggleSelection}
-            onChange={onChange}
-          />
-        );
-      })}
-    </div>
+          return (
+            <TransactionCard
+              key={transaction.id}
+              transaction={data}
+              isSelected={isSelected}
+              isEditing={isEditing}
+              currencies={currencies}
+              startEditing={startEditing}
+              stopEditing={stopEditing}
+              saveChanges={saveChanges}
+              toggleSelection={toggleSelection}
+              onChange={onChange}
+            />
+          );
+        })}
+      </div>
+    </>
   );
 }
 
