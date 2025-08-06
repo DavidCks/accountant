@@ -1,16 +1,21 @@
 // useAuthEffect.ts
 import { AuthChangeEvent, Session } from "@supabase/supabase-js";
-import { useEffect } from "react";
+import { DependencyList, useEffect, useRef } from "react";
 import { authEvents } from "../authEvents";
 
 export function useAuthEffect(
-  callback: (event: AuthChangeEvent, session: Session | null) => void
+  callback: (event: AuthChangeEvent, session: Session | null) => void,
+  deps?: DependencyList,
 ) {
-  useEffect(() => {
-    callback("INITIAL_SESSION", null);
+  const callbackRef = useRef(callback);
+  callbackRef.current = callback;
+
+  return useEffect(() => {
+    console.log("[useAuthEffect] executing auth update");
+    callbackRef.current("INITIAL_SESSION", null);
     const unsubscribe = authEvents.on(callback);
     return () => {
       unsubscribe();
     };
-  }, [callback]);
+  }, deps);
 }

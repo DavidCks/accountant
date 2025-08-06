@@ -154,6 +154,7 @@ export abstract class Supabase {
             console.warn("Auth listener error:", e);
           }
         }
+        console.log("[Supabase] emitting auth event:", event, session?.user.id);
         authEvents.emit(event, session);
       },
     );

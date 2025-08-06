@@ -17,7 +17,7 @@ export class SB extends Supabase {
     FReturn<{ txs: Transaction[]; user: User }>
   > {
     Supabase.ensureInitialized();
-    const user = await Supabase.getCurrentUser();
+    const user = await SB.getCurrentUser();
     if (user.error) {
       return {
         value: null,
@@ -53,7 +53,7 @@ export class SB extends Supabase {
     message: Transaction["message"];
   }): Promise<FReturn<true>> {
     Supabase.ensureInitialized();
-    const user = await Supabase.getCurrentUser();
+    const user = await SB.getCurrentUser();
     if (user.error) {
       return {
         value: null,
@@ -82,7 +82,7 @@ export class SB extends Supabase {
     transaction: Transaction,
   ): Promise<FReturn<true>> {
     Supabase.ensureInitialized();
-    const user = await Supabase.getCurrentUser();
+    const user = await SB.getCurrentUser();
     if (user.error) {
       return {
         value: null,
@@ -113,7 +113,7 @@ export class SB extends Supabase {
     transaction: Transaction,
   ): Promise<FReturn<true>> {
     Supabase.ensureInitialized();
-    const user = await Supabase.getCurrentUser();
+    const user = await SB.getCurrentUser();
     if (user.error) {
       return {
         value: null,
@@ -146,7 +146,7 @@ export class SB extends Supabase {
   ): Promise<FReturn<{ path: string }>> {
     Supabase.ensureInitialized();
 
-    const user = await Supabase.getCurrentUser();
+    const user = await SB.getCurrentUser();
     if (user.error) {
       return {
         value: null,
@@ -226,6 +226,31 @@ export class SB extends Supabase {
     };
   }
 
+  static cachedUser: User | null = null;
+  static cachedUserTimestamp: number | null = null;
+  static CACHE_DURATION_MS = 60 * 1000; // 1 minute
+
+  static async getCurrentUser(): Promise<FReturn<User>> {
+    console.log("[Supabase] Fetching current user...");
+    const now = Date.now();
+    const isCacheValid = Boolean(
+      SB.cachedUser &&
+        SB.cachedUserTimestamp &&
+        now - SB.cachedUserTimestamp < SB.CACHE_DURATION_MS,
+    );
+
+    const user = isCacheValid
+      ? { value: SB.cachedUser!, error: null }
+      : await Supabase.getCurrentUser();
+
+    if (!isCacheValid && user.value) {
+      SB.cachedUser = user.value;
+      SB.cachedUserTimestamp = now;
+    }
+
+    return user;
+  }
+
   static async getTransactionAttachmentUrl(
     tx: Transaction,
   ): Promise<string | null> {
@@ -240,10 +265,10 @@ export class SB extends Supabase {
       return URL.createObjectURL(cachedBlob);
     }
 
-    const user = await Supabase.getCurrentUser();
+    const user = await SB.getCurrentUser();
     if (user.error) return null;
 
-    const filePath = `${user.value.id}/${tx.id}/${tx.id}.pdf`;
+    const filePath = `${user.value!.id}/${tx.id}/${tx.id}.pdf`;
 
     const { data, error } = await Supabase.client.storage
       .from("attachments")
@@ -269,7 +294,7 @@ export class SB extends Supabase {
     }>
   > {
     Supabase.ensureInitialized();
-    const user = await Supabase.getCurrentUser();
+    const user = await SB.getCurrentUser();
     if (user.error) {
       return {
         value: null,
@@ -520,7 +545,7 @@ export class SB extends Supabase {
       }
     }
 
-    const user = await Supabase.getCurrentUser();
+    const user = await SB.getCurrentUser();
     if (!user.error) {
       const code = user.value.user_metadata?.base_currency;
       if (code) {
@@ -556,7 +581,7 @@ export class SB extends Supabase {
       JSON.stringify({ code, savedAt: Date.now() }),
     );
 
-    const user = await Supabase.getCurrentUser();
+    const user = await SB.getCurrentUser();
     if (user.error) {
       return { value: null, error: user.error };
     }

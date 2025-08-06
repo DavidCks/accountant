@@ -58,7 +58,7 @@ export function AppSidebar({
   useAuthEffect((event, session) => {
     if (
       (event === "SIGNED_IN" && user?.email !== session?.user.email) ||
-      (event === "INITIAL_SESSION" && session === null)
+      (event === "INITIAL_SESSION" && session === null && !user)
     ) {
       // Get the current user from Supabase
       SB.getCurrentUser().then((user) => {
