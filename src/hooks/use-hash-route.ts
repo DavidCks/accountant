@@ -24,13 +24,24 @@ export function useHashRoute(defaultRoute: [string, string, ...string[]]) {
   const [route, setRouteState] = useState<string[]>(defaultRoute);
 
   useEffect(() => {
-    const updateRoute = () => {
+    const getRoute = () => {
       const hash = window.location.hash.slice(1);
-      console.log("HashRoute:", hash);
       const parts = hash.split("%EF%BD%9C").filter((p) => !!p);
+      const route = parts.length === 0 ? defaultRoute : parts;
+      console.log("HashRoute:", hash);
       console.log("HashRoute:", "parts", parts);
+      console.log("HashRoute:", "route", route);
+      return route;
+    };
+    const updateRoute = () => {
+      const parts = getRoute();
       setRouteState(parts);
     };
+
+    const parts = getRoute();
+    if (defaultRoute.join("/") !== parts.join("/")) {
+      setRouteState(parts);
+    }
     window.addEventListener("hashchange", updateRoute);
     return () => window.removeEventListener("hashchange", updateRoute);
   }, []);

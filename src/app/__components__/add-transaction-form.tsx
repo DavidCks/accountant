@@ -49,7 +49,7 @@ const AddTransactionForm = ({
           const participant = formData.get("participant")!;
           const status = formData.get("status")!;
           const message = formData.get("message")!;
-
+          const created_at = formData.get("created_at") as string;
           const transaction = {
             amount: String(amount),
             currency_code: String(currency_code) as CurrencyCode,
@@ -58,6 +58,10 @@ const AddTransactionForm = ({
             participant: String(participant),
             status: String(status) as "done" | "pending",
             message: String(message),
+            ...(created_at && {
+              created_at: new Date(created_at).toISOString(),
+              updated_at: new Date(created_at).toISOString(), // optional: keep in sync
+            }),
           };
           onSubmit?.(transaction);
           const result = await SB.addTransaction(transaction);
@@ -70,6 +74,19 @@ const AddTransactionForm = ({
         }}
         className="grid gap-4"
       >
+        {/* Date */}
+        <div className="grid gap-1">
+          <Label className="pb-1" htmlFor="created_at">
+            Date
+          </Label>
+          <Input
+            id="created_at"
+            name="created_at"
+            type="datetime-local"
+            className="w-full"
+            defaultValue={new Date().toISOString().slice(0, 16)}
+          />
+        </div>
         {/* Amount */}
         <div className="grid gap-1">
           <Label htmlFor="amount">Amount</Label>

@@ -51,6 +51,8 @@ export class SB extends Supabase {
     participant: Transaction["participant"];
     status: Transaction["status"];
     message: Transaction["message"];
+    created_at?: string;
+    updated_at?: string;
   }): Promise<FReturn<true>> {
     Supabase.ensureInitialized();
     const user = await SB.getCurrentUser();

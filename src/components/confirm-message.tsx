@@ -2,7 +2,6 @@
 import { cn } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ReactNode, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { FaSpinner } from "react-icons/fa";
 import {
   OnLoadCallbackType,
@@ -25,7 +24,6 @@ export function ConfirmMessage({
   type?: "success" | "warning";
   onLoad: OnLoadCallbackType;
 }) {
-  const router = useRouter();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -45,10 +43,10 @@ export function ConfirmMessage({
               <Link href={result.value.redirectTo!}>
                 {` ${result.value.redirectTo}`}
               </Link>
-            </>
+            </>,
           );
 
-          router.push(result.value.redirectTo!);
+          window.location.href = result.value.redirectTo!;
         }
       }
       setIsLoading(false);
