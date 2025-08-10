@@ -92,7 +92,7 @@ const PageImpl = () => {
     ) {
       transactionsMutation.mutate();
     }
-  });
+  }, []);
 
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   if (!transactionsMutation.isSuccess && initialLoad) {

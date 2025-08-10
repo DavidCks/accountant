@@ -19,6 +19,8 @@ import {
 } from "@/components/ui/accordion";
 import { Memo, useEffectOnce } from "@legendapp/state/react";
 import { ResumeController } from "./resume-controller";
+import { Loader2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface ImageUploadProps {
   onChange?: (dataUri: string) => void;
@@ -148,16 +150,29 @@ const ResumeForm: FC = () => {
   const onSave = () => ResumeController.applyBuffer();
   const onReset = () => buffer$.set(data$.peek());
 
+  const isSaving = ResumeController.use("isLoading");
+
   return (
     <form className="space-y-8">
       {/* Header actions */}
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold tracking-tight">Resume Form</h2>
         <div className="flex gap-2">
-          <Button variant="outline" type="button" onClick={onReset}>
+          <Loader2
+            className={cn(
+              isSaving ? "animate-spin" : "hidden",
+              "self-center opacity-50",
+            )}
+          />
+          <Button
+            disabled={isSaving}
+            variant="outline"
+            type="button"
+            onClick={onReset}
+          >
             Reset
           </Button>
-          <Button type="button" onClick={onSave}>
+          <Button type="button" onClick={onSave} disabled={isSaving}>
             Save
           </Button>
         </div>
@@ -806,14 +821,6 @@ const ResumeForm: FC = () => {
                             />
                           </Field>
 
-                          <Field id={`work-start-${i}`} label="Start (YYYY-MM)">
-                            <$React.input
-                              id={`work-start-${i}`}
-                              $value={buffer$.workExperience[i].start}
-                              className={inputClasses}
-                              placeholder="2015-01"
-                            />
-                          </Field>
                           <Field id={`work-start-year-${i}`} label="Start year">
                             <$React.input
                               id={`work-start-year-${i}`}

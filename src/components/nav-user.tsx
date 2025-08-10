@@ -128,7 +128,7 @@ export function NavUser({
                                 storedSessionData.email,
                               );
                               const urlString = url.toString();
-                              router.push(urlString);
+                              window.location.href = urlString;
                             } else {
                               window.location.reload();
                             }
@@ -151,7 +151,9 @@ export function NavUser({
                       </div>
                     </DropdownMenuItem>
                   ))}
-              <DropdownMenuItem onClick={() => router.push(loginUrl)}>
+              <DropdownMenuItem
+                onClick={() => (window.location.href = loginUrl)}
+              >
                 <Plus /> Add account
               </DropdownMenuItem>
               <DropdownMenuSeparator />
@@ -162,7 +164,7 @@ export function NavUser({
               <DropdownMenuItem
                 onClick={() =>
                   SB.signOut().then(() => {
-                    router.push(loginUrl);
+                    window.location.href = loginUrl;
                   })
                 }
               >

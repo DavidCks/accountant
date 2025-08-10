@@ -80,6 +80,47 @@ export class SB extends Supabase {
     };
   }
 
+  static async updateUserMetadata(
+    key: string,
+    value: string,
+  ): Promise<FReturn<true>> {
+    Supabase.ensureInitialized();
+
+    const user = await SB.getCurrentUser();
+    if (user.error) {
+      return { value: null, error: user.error };
+    }
+
+    const { error } = await Supabase.client.auth.updateUser({
+      data: { [key]: value },
+    });
+
+    if (error) {
+      console.error("[SB] error updating '", key, "' with data", value);
+      return {
+        value: null,
+        error: {
+          message: error.message,
+          code: error.name ?? "update_failed",
+        },
+      };
+    }
+    console.log("[SB] updated '", key, "' with data", value);
+    // Update cached user if available
+    if (SB.cachedUser) {
+      SB.cachedUser = {
+        ...SB.cachedUser,
+        user_metadata: {
+          ...SB.cachedUser.user_metadata,
+          [key]: value,
+        },
+      };
+      SB.cachedUserTimestamp = Date.now();
+    }
+
+    return { value: true, error: null };
+  }
+
   static async updateTransaction(
     transaction: Transaction,
   ): Promise<FReturn<true>> {

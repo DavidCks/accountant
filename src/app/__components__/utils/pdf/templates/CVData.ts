@@ -71,7 +71,6 @@ export interface CVDataType {
         item: string;
       }>;
     }>;
-    start: string;
     startYear: string;
     startMonth: string;
     endYear: string;
@@ -212,7 +211,6 @@ export class CVData {
             items: [{ level: "{ExpertiseLevel}", item: "{TechnologyOrTool}" }],
           },
         ],
-        start: w.start ?? "2015-01",
         startYear: w.startYear ?? "2015",
         startMonth: w.startMonth ?? "01",
         endYear: w.endYear ?? "2018",
@@ -247,7 +245,6 @@ export class CVData {
               ],
             },
           ],
-          start: "2015-01",
           startYear: "2015",
           startMonth: "01",
           endYear: "2018",

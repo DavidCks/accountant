@@ -57,7 +57,7 @@ export function SignupForm({
                 );
                 setSuccessMessage(null);
               } else if (result.value.redirectTo) {
-                await router.push(result.value.redirectTo);
+                await window.location.href =(result.value.redirectTo);
               } else {
                 setSuccessMessage(result.value.message);
                 setErrorMessage(null);

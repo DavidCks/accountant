@@ -242,7 +242,6 @@ export class PdfTemplate {
     const sx = container.internal.minX + arrowX;
     const ex = container.internal.minX + arrowX;
     const mx = container.internal.minX + arrowX + arrowSize / 2;
-    console.log(sx);
     container.internal.doc
       .save()
       .moveTo(sx, sy)

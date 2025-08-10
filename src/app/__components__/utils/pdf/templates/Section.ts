@@ -146,6 +146,9 @@ export class PdfSection {
    * Adds an image within the bounds of the section.
    */
   image(uri: PDFKit.Mixins.ImageSrc) {
+    if (!uri) {
+      return;
+    }
     const { minX, minY, maxX, maxY, doc } = this.internal;
 
     const width = maxX - minX;
