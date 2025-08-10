@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { ObservablePrimitive } from "@legendapp/state";
 import { PropertyWhere } from "../__types__/PropertyWhere";
 import { UnwrapObservable } from "../__types__/UnwrapObservable";

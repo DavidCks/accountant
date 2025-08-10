@@ -19,7 +19,6 @@ import {
 } from "@/components/ui/sidebar";
 import { Supabase } from "@/lib/__supabase__/supabase";
 
-import { useRouter } from "next/navigation";
 import { Plus, RefreshCcw } from "lucide-react";
 import { useState } from "react";
 import { SettingsDialog } from "./settings-dialogue";
@@ -36,7 +35,6 @@ export function NavUser({
   loginUrl: string;
 }) {
   const { isMobile } = useSidebar();
-  const router = useRouter();
   const [showSettings, setShowSettings] = useState(false);
 
   return (

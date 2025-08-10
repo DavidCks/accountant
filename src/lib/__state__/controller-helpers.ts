@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { controllerRaw } from "./controller-raw";
 import { controllerUse } from "./controller-use";
 
