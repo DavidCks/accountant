@@ -27,7 +27,6 @@ export function SignupForm({
 }: React.ComponentProps<"div"> & {
   onSignup: OnSignupCallbackType;
 }) {
-  const router = useRouter();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -49,15 +48,15 @@ export function SignupForm({
               const formData = new FormData(e.currentTarget);
               const result = await SignupFormController.hanldeSubmit(
                 formData,
-                onSignup
+                onSignup,
               );
               if (result.error) {
                 setErrorMessage(
-                  `${result.error.message} (${result.error.code})`
+                  `${result.error.message} (${result.error.code})`,
                 );
                 setSuccessMessage(null);
               } else if (result.value.redirectTo) {
-                await window.location.href =(result.value.redirectTo);
+                window.location.href = result.value.redirectTo;
               } else {
                 setSuccessMessage(result.value.message);
                 setErrorMessage(null);
