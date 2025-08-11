@@ -14,7 +14,6 @@ import {
   LoginFormController,
   OnLoginCallbackType,
 } from "./login-form-controller";
-import { useRouter } from "next/navigation";
 import { FaSpinner } from "react-icons/fa";
 import { ErrorCard } from "./error-card";
 import { SuccessCard } from "./success-card";
@@ -31,7 +30,6 @@ export function LoginForm({
   onLogin: OnLoginCallbackType;
   defaultEmail?: string;
 }) {
-  const router = useRouter();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -59,11 +57,11 @@ export function LoginForm({
               const formData = new FormData(e.currentTarget);
               const result = await LoginFormController.hanldeSubmit(
                 formData,
-                onLogin
+                onLogin,
               );
               if (result.error) {
                 setErrorMessage(
-                  `${result.error.message} (${result.error.code})`
+                  `${result.error.message} (${result.error.code})`,
                 );
                 setSuccessMessage(null);
               } else {
@@ -76,9 +74,9 @@ export function LoginForm({
                       <Link href={result.value.redirectTo!}>
                         {` ${result.value.redirectTo}`}
                       </Link>
-                    </>
+                    </>,
                   );
-                  await router.push(result.value.redirectTo);
+                  window.location.href = result.value.redirectTo;
                 }
               }
               setIsLoading(false);
