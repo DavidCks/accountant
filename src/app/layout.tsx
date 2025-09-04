@@ -4,6 +4,7 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeToggle } from "@/components/theme-toggle";
 import ThemeProvider from "@/components/theme-provider";
+import SBRegistrar from "./sb-registrar";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -30,6 +31,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <SBRegistrar />
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <main className="overflow-x-hidden">{children}</main>
           <Toaster className="flex items-center justify-center p-0!" expand />

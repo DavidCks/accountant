@@ -16,6 +16,7 @@ import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { ConfirmMessage } from "@/components/confirm-message";
 import { OnLoadReturnType } from "@/components/confirm-message-controller";
 import {
+  IconCalendarDollar,
   IconListDetails,
   IconReceiptBitcoin,
   IconTie,
@@ -29,6 +30,10 @@ import TransactionsDiff from "../__components__/transactions-diff";
 import { cn } from "@/lib/utils";
 import { useHashRoute } from "@/hooks/use-hash-route";
 import Jobs from "./routes/jobs";
+import AIModelsPanel from "../__components__/ai-panel";
+import { AIController } from "../__components__/ai-controller";
+import Taxes from "./routes/taxes";
+import Budget from "./routes/budget";
 
 const queryClient = new QueryClient();
 
@@ -48,6 +53,11 @@ const navItems = {
       icon: IconListDetails,
     },
     {
+      title: "Budget",
+      url: ["%F0%9F%92%B0", "budget"] as [string, string, ...string[]],
+      icon: IconCalendarDollar,
+    },
+    {
       title: "Taxes",
       url: ["%F0%9F%92%B8", "taxes"] as [string, string, ...string[]],
       icon: IconReceiptBitcoin,
@@ -64,6 +74,7 @@ const PageImpl = () => {
   const transactionsMutation = useMutation({
     mutationFn: SB.getTransactions,
   });
+  const aiPanelOpen = AIController.use("panelOpen");
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [hashRoute, _setHashRoute] = useHashRoute([
     "%F0%9F%A4%9D",
@@ -190,189 +201,206 @@ const PageImpl = () => {
   }
 
   return (
-    <SidebarProvider
-      style={
-        {
-          "--sidebar-width": "calc(var(--spacing) * 72)",
-          "--header-height": "calc(var(--spacing) * 12)",
-        } as React.CSSProperties
-      }
-    >
-      <AppSidebar
-        navMain={navItems.navMain}
-        SB={SB}
-        title="accountant"
-        variant="inset"
-        loginUrl="/login"
-      />
-      <SidebarInset>
-        <SiteHeader
-          heading={
-            <>
-              <div className="flex justify-between w-full relative">
-                <span>
-                  {
-                    navItems.navMain.find((item) =>
-                      item.url.every((seg, i) => seg === hashRoute[i]),
-                    )?.title
-                  }
-                </span>
-              </div>
-              <span className="absolute sm:right-1/2 sm:translate-x-1/2 top-1.5 right-2">
-                {!initialLoad &&
-                transactionsMutation.isSuccess &&
-                !transactionsMutation.data.error ? (
-                  <TransactionsSum
-                    transactions={transactionsMutation.data!.value!.txs!}
-                  />
-                ) : (
-                  <span className="animate-pulse">
-                    <div className="rounded-full h-2 w-2 dark:bg-white/50"></div>
-                  </span>
-                )}
-              </span>
-            </>
-          }
+    <>
+      <AIModelsPanel />
+      <SidebarProvider
+        className={cn(aiPanelOpen ? "w-3/4" : "")}
+        style={
+          {
+            "--sidebar-width": "calc(var(--spacing) * 72)",
+            "--header-height": "calc(var(--spacing) * 12)",
+          } as React.CSSProperties
+        }
+      >
+        <AppSidebar
+          navMain={navItems.navMain}
+          SB={SB}
+          title="accountant"
+          variant="inset"
+          loginUrl="/login"
         />
-        {hashRoute.join("/") === navItems.navMain[0].url.join("/") ? (
-          <div className="flex flex-1 flex-col">
-            <div className="@container/main flex flex-1 flex-col gap-2">
-              <div className="flex flex-col gap-4 py-4 md:gap-4 md:py-6">
-                {/* Add Transaction Card */}
-                {!initialLoad &&
-                transactionsMutation.isSuccess &&
-                !transactionsMutation.data.error ? (
-                  <>
-                    <div className="px-6 flex flex-col">
-                      <TransactionsFilter
-                        onChange={(newFilterFn) => {
-                          setFilterFn(() => newFilterFn);
-                          // Use this filtered list however you'd like
-                        }}
-                      />
-                    </div>
-                    <Dialog>
-                      <DialogTrigger className="mx-6" asChild>
-                        <Button variant="outline">Add Transaction</Button>
-                      </DialogTrigger>
-                      <DialogTitle className="sr-only">
-                        Add Transaction
-                      </DialogTitle>
-                      <DialogContent className="sm:max-w-[425px]">
-                        <AddTransactionForm
-                          onSubmit={async () => {
-                            setLoading(true);
-                          }}
-                          onSubmitted={() => {
-                            transactionsMutation.mutate();
-                            setLoading(false);
+        <SidebarInset className="w-[calc(100%-296px)]">
+          <SiteHeader
+            heading={
+              <>
+                <div className="flex justify-between w-full relative">
+                  <span>
+                    {
+                      navItems.navMain.find((item) =>
+                        item.url.every((seg, i) => seg === hashRoute[i]),
+                      )?.title
+                    }
+                  </span>
+                </div>
+                <span className="absolute sm:right-1/2 sm:translate-x-1/2 top-1.5 right-2">
+                  {!initialLoad &&
+                  transactionsMutation.isSuccess &&
+                  !transactionsMutation.data.error ? (
+                    <TransactionsSum
+                      transactions={transactionsMutation.data!.value!.txs!}
+                    />
+                  ) : (
+                    <span className="animate-pulse">
+                      <div className="rounded-full h-2 w-2 dark:bg-white/50"></div>
+                    </span>
+                  )}
+                </span>
+              </>
+            }
+          />
+          {hashRoute.join("/") === navItems.navMain[0].url.join("/") ? (
+            <div className={cn("flex flex-1 flex-col")}>
+              <div className="@container/main flex flex-1 flex-col gap-2">
+                <div className="flex flex-col gap-4 py-4 md:gap-4 md:py-6">
+                  {/* Add Transaction Card */}
+                  {!initialLoad &&
+                  transactionsMutation.isSuccess &&
+                  !transactionsMutation.data.error ? (
+                    <>
+                      <div className="px-6 flex flex-col">
+                        <TransactionsFilter
+                          onChange={(newFilterFn) => {
+                            setFilterFn(() => newFilterFn);
+                            // Use this filtered list however you'd like
                           }}
                         />
-                      </DialogContent>
-                    </Dialog>
-                    <Dialog>
-                      <DialogTrigger asChild>
-                        <Button
-                          className={cn(
-                            "mx-6",
-                            selectedTxs.length === 0
-                              ? "!opacity-0 mb-0 h-0 p-0"
-                              : "!opacity-100 mb-6 h-8 p-4",
-                          )}
-                          variant="outline"
-                          disabled={selectedTxs.length === 0}
-                        >
-                          Calculate Difference
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent className="sm:max-w-[400px]">
-                        <DialogTitle>Transaction Difference</DialogTitle>
-                        <TransactionsDiff transactions={selectedTxs} />
-                      </DialogContent>
-                    </Dialog>
-                    <TransactionCards
-                      onSelectionChange={setSelectedTxs}
-                      onChange={() => transactionsMutation.mutate()}
-                      transactions={filteredTransactions}
-                    />
-                  </>
-                ) : (!initialLoad && transactionsMutation.isPending) ||
-                  loading ? (
-                  <div className="flex flex-1 items-center justify-center h-screen">
-                    <ConfirmMessage
-                      title="Updating transactions"
-                      onLoad={async () => {
-                        return {
-                          value: {
-                            message: "Updating transactions...",
-                          },
-                          error: null,
-                        };
-                      }}
-                    />
-                  </div>
-                ) : transactionsMutation.data?.error ? (
-                  <div className="flex flex-1 items-center justify-center h-screen">
-                    <ConfirmMessage
-                      title="Not logged in"
-                      type="warning"
-                      onLoad={async () => {
-                        if (transactionsMutation.data?.error?.code === 400) {
+                      </div>
+                      <Dialog>
+                        <DialogTrigger className="mx-6" asChild>
+                          <Button variant="outline">Add Transaction</Button>
+                        </DialogTrigger>
+                        <DialogTitle className="sr-only">
+                          Add Transaction
+                        </DialogTitle>
+                        <DialogContent className="sm:max-w-[425px]">
+                          <AddTransactionForm
+                            onSubmit={async () => {
+                              setLoading(true);
+                            }}
+                            onSubmitted={() => {
+                              transactionsMutation.mutate();
+                              setLoading(false);
+                            }}
+                          />
+                        </DialogContent>
+                      </Dialog>
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button
+                            className={cn(
+                              "mx-6",
+                              selectedTxs.length === 0
+                                ? "!opacity-0 mb-0 h-0 p-0"
+                                : "!opacity-100 mb-6 h-8 p-4",
+                            )}
+                            variant="outline"
+                            disabled={selectedTxs.length === 0}
+                          >
+                            Calculate Difference
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-[400px]">
+                          <DialogTitle>Transaction Difference</DialogTitle>
+                          <TransactionsDiff transactions={selectedTxs} />
+                        </DialogContent>
+                      </Dialog>
+                      <TransactionCards
+                        onSelectionChange={setSelectedTxs}
+                        onChange={() => transactionsMutation.mutate()}
+                        transactions={filteredTransactions}
+                      />
+                    </>
+                  ) : (!initialLoad && transactionsMutation.isPending) ||
+                    loading ? (
+                    <div className="flex flex-1 items-center justify-center h-screen">
+                      <ConfirmMessage
+                        title="Updating transactions"
+                        onLoad={async () => {
                           return {
                             value: {
-                              message: "Redirecting to the Login page...",
-                              redirectTo: "/login",
+                              message: "Updating transactions...",
                             },
                             error: null,
                           };
-                        }
-                        return {
-                          value: null,
-                          error: {
-                            message:
-                              transactionsMutation.data?.error?.message ??
-                              "Loading transactions failed.",
-                            code:
-                              transactionsMutation.data?.error?.code ??
-                              "transaction_update_failed",
-                          },
-                        };
-                      }}
-                    />
-                  </div>
-                ) : (
-                  <div className="flex flex-1 items-center justify-center h-screen">
-                    <ConfirmMessage
-                      title="Loading transactions failed"
-                      onLoad={async () => {
-                        return {
-                          value: null,
-                          error: {
-                            message: "Loading transactions failed.",
-                            code: "transaction_update_failed",
-                          },
-                        };
-                      }}
-                    />
-                  </div>
-                )}
-                {/* <div className="px-4 lg:px-6">
+                        }}
+                      />
+                    </div>
+                  ) : transactionsMutation.data?.error ? (
+                    <div className="flex flex-1 items-center justify-center h-screen">
+                      <ConfirmMessage
+                        title="Not logged in"
+                        type="warning"
+                        onLoad={async () => {
+                          if (
+                            transactionsMutation.data?.error?.code === 400 ||
+                            transactionsMutation.data?.error?.code === 401
+                          ) {
+                            return {
+                              value: {
+                                message: "Redirecting to the Login page...",
+                                redirectTo: "/login",
+                              },
+                              error: null,
+                            };
+                          }
+                          return {
+                            value: null,
+                            error: {
+                              message:
+                                transactionsMutation.data?.error?.message ??
+                                "Loading transactions failed.",
+                              code:
+                                transactionsMutation.data?.error?.code ??
+                                "transaction_update_failed",
+                            },
+                          };
+                        }}
+                      />
+                    </div>
+                  ) : (
+                    <div className="flex flex-1 items-center justify-center h-screen">
+                      <ConfirmMessage
+                        title="Loading transactions failed"
+                        onLoad={async () => {
+                          return {
+                            value: null,
+                            error: {
+                              message: "Loading transactions failed.",
+                              code: "transaction_update_failed",
+                            },
+                          };
+                        }}
+                      />
+                    </div>
+                  )}
+                  {/* <div className="px-4 lg:px-6">
                 <ChartAreaInteractive />
               </div> */}
-                {/* <DataTable data={data} /> */}
+                  {/* <DataTable data={data} /> */}
+                </div>
               </div>
             </div>
-          </div>
-        ) : hashRoute.join("/") === navItems.navMain[1].url.join("/") ? (
-          <div className="flex flex-1 justify-center items-center h-full w-full">
-            <p>Taxes feature coming soon!</p>
-          </div>
-        ) : hashRoute.join("/") === navItems.navMain[2].url.join("/") ? (
-          <Jobs />
-        ) : (
-          ""
-        )}
-      </SidebarInset>
-    </SidebarProvider>
+          ) : hashRoute.join("/") === navItems.navMain[2].url.join("/") ? (
+            transactionsMutation!.isSuccess &&
+            !transactionsMutation.data?.error ? (
+              <Taxes txs={transactionsMutation.data!.value.txs} />
+            ) : (
+              <p>Error loading transactions for taxes</p>
+            )
+          ) : hashRoute.join("/") === navItems.navMain[3].url.join("/") ? (
+            <Jobs />
+          ) : hashRoute.join("/") === navItems.navMain[1].url.join("/") ? (
+            transactionsMutation!.isSuccess &&
+            !transactionsMutation.data?.error ? (
+              <Budget txs={transactionsMutation.data!.value.txs} />
+            ) : (
+              <p>Error loading transactions for budget</p>
+            )
+          ) : (
+            ""
+          )}
+        </SidebarInset>
+      </SidebarProvider>
+    </>
   );
 };

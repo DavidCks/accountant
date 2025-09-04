@@ -150,7 +150,9 @@ export function NavUser({
                     </DropdownMenuItem>
                   ))}
               <DropdownMenuItem
-                onClick={() => (window.location.href = loginUrl)}
+                onClick={() =>
+                  setTimeout(() => (window.location.href = loginUrl), 200)
+                }
               >
                 <Plus /> Add account
               </DropdownMenuItem>

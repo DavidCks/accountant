@@ -2,11 +2,10 @@ import { FC, useState } from "react";
 import { useEffect } from "react";
 import "./utils/pdf/registerFonts";
 import { PdfTemplate } from "./utils/pdf/templates/Templates";
-import { ResumeController } from "./resume-controller";
+import { CVDataType } from "./utils/pdf/templates/CVData";
 
-const ResumeTemplate: FC = () => {
+const ResumeTemplate: FC<{ cvdata: CVDataType }> = ({ cvdata }) => {
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
-  const cvdata = ResumeController.use("data");
 
   useEffect(() => {
     const create = async () => {
@@ -23,7 +22,15 @@ const ResumeTemplate: FC = () => {
 
   return (
     <div>
-      {pdfUrl && <iframe key={pdfUrl} src={pdfUrl} width="100%" height="600" />}
+      {pdfUrl && (
+        <iframe
+          className="rounded-md"
+          key={pdfUrl}
+          src={pdfUrl}
+          width="100%"
+          height="600"
+        />
+      )}
     </div>
   );
 };

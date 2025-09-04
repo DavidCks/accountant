@@ -50,6 +50,11 @@ export abstract class Supabase {
     return Supabase.client;
   }
 
+  static configure(url: string, key: string) {
+    Supabase._url = url;
+    Supabase._key = key;
+  }
+
   /**
    * Get the current auth subscription.
    * @returns {Subscription | null}
@@ -90,9 +95,30 @@ export abstract class Supabase {
    * @private
    */
   static ensureInitialized(): void {
-    if (!Supabase.client) {
-      Supabase.client = createClient(Supabase._url, Supabase._key);
+    if (Supabase.client) return;
+
+    const g = globalThis as any;
+    if (g.__sbClient) {
+      Supabase.client = g.__sbClient;
+      return;
+    }
+
+    // read from env as a fallback if not configured
+    const url = Supabase._url ?? process.env.NEXT_PUBLIC_SUPABASE_URL!;
+    const key = Supabase._key ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+    if (!url || !key) throw new Error("Supabase URL/Key not configured");
+
+    const isBrowser = typeof window !== "undefined";
+    const client = createClient(url, key, {
+      auth: { persistSession: isBrowser, autoRefreshToken: isBrowser },
+    });
+
+    Supabase.client = client;
+    g.__sbClient = client;
+
+    if (!g.__sbAuthSubscribed) {
       Supabase._subscribeToAuthStateChange();
+      g.__sbAuthSubscribed = true;
     }
   }
 
@@ -233,6 +259,8 @@ export abstract class Supabase {
     }
   }
 
+  private static _userReq?: Promise<FReturn<User>>;
+
   /**
    * Gets the currently authenticated user, if available.
    *
@@ -258,38 +286,69 @@ export abstract class Supabase {
    * };
    * ```
    */
+  // Replace your method with this:
   static async getCurrentUser(): Promise<FReturn<User>> {
     try {
       Supabase.ensureInitialized();
-      const result = await Supabase.client.auth.getUser();
-      if (result.error) {
-        console.error("Error getting user:", result.error.message);
+
+      // 1) Don’t hit /user unless a session exists
+      const {
+        data: { session },
+        error: sessErr,
+      } = await Supabase.client.auth.getSession();
+
+      if (sessErr) {
         return {
           value: null,
-          error: {
-            message: result.error.message,
-            code: result.error.status ?? 500,
-          },
-        };
-      } else if (!result.data.user) {
-        console.error("Error: No user returned");
-        return {
-          value: null,
-          error: {
-            message: "No user returned",
-            code: 500,
-          },
+          error: { message: sessErr.message, code: sessErr.status ?? 500 },
         };
       }
-      return {
-        value: result.data.user,
-        error: null,
-      };
+      if (!session) {
+        return { value: null, error: { message: "Not signed in", code: 401 } };
+      }
+
+      // 2) Dedupe in-flight /user calls
+      if (!this._userReq) {
+        this._userReq = (async () => {
+          const res = await Supabase.client.auth.getUser();
+
+          // clear the latch for the next call
+          const clear = () => {
+            this._userReq = undefined;
+          };
+
+          if (res.error) {
+            clear();
+            return {
+              value: null,
+              error: {
+                message: res.error.message,
+                code: res.error.status ?? 401,
+              },
+            };
+          }
+          if (!res.data.user) {
+            clear();
+            return {
+              value: null,
+              error: { message: "Not signed in", code: 401 },
+            };
+          }
+
+          clear();
+          return { value: res.data.user, error: null };
+        })();
+      }
+
+      return await this._userReq;
     } catch (error) {
       return {
         value: null,
         error: {
-          message: `An unexpected error occurred while getting the current user: \n\n${error}`,
+          message:
+            error instanceof Error
+              ? error.message
+              : `Unexpected error: ${String(error)}`,
           code: 500,
         },
       };

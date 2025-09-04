@@ -6,11 +6,11 @@ import { User } from "@supabase/supabase-js";
 import { jsPDF } from "jspdf";
 import { IDB } from "@/lib/__storage__/idb";
 export class SB extends Supabase {
+  public static anonKey =
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpndnZ5d2JxcHFncHJteXN4ZGNwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDcxNjcwMzgsImV4cCI6MjA2Mjc0MzAzOH0.EuS870MQOQVQXBOBOAFSHiL4zS7mefkEi1kVW3aInTo";
+  public static anonUrl = "https://jgvvywbqpqgprmysxdcp.supabase.co";
   constructor() {
-    super(
-      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpndnZ5d2JxcHFncHJteXN4ZGNwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDcxNjcwMzgsImV4cCI6MjA2Mjc0MzAzOH0.EuS870MQOQVQXBOBOAFSHiL4zS7mefkEi1kVW3aInTo",
-      "https://jgvvywbqpqgprmysxdcp.supabase.co",
-    );
+    super(SB.anonKey, SB.anonUrl);
   }
 
   static async getTransactions(): Promise<
@@ -79,46 +79,98 @@ export class SB extends Supabase {
       error: null,
     };
   }
+  // Add this at class scope (SB)
+  private static _metaQueue: Promise<void> = Promise.resolve();
 
+  // Replace your method with this queued version
   static async updateUserMetadata(
     key: string,
     value: string,
   ): Promise<FReturn<true>> {
     Supabase.ensureInitialized();
 
-    const user = await SB.getCurrentUser();
-    if (user.error) {
-      return { value: null, error: user.error };
-    }
+    return await new Promise<FReturn<true>>((resolve) => {
+      // Ensure the chain continues even if a previous task rejected
+      SB._metaQueue = SB._metaQueue
+        .catch(() => {})
+        .then(async () => {
+          try {
+            const user = await SB.getCurrentUser();
+            if (user.error) {
+              resolve({ value: null, error: user.error });
+              return;
+            }
+            const userId = user.value.id;
 
-    const { error } = await Supabase.client.auth.updateUser({
-      data: { [key]: value },
+            // Read current
+            const { data: existing, error: selErr } = await Supabase.client
+              .from("metadata")
+              .select("data")
+              .eq("user_uid", userId)
+              .limit(1);
+
+            if (selErr) {
+              resolve({
+                value: null,
+                error: {
+                  message: selErr.message,
+                  code: selErr.code ?? "select_failed",
+                },
+              });
+              return;
+            }
+
+            const current = (existing?.[0]?.data ?? {}) as Record<string, any>;
+            const merged = { ...current, [key]: value };
+
+            if (existing && existing.length > 0) {
+              // Update
+              const { error: updErr } = await Supabase.client
+                .from("metadata")
+                .update({ data: merged })
+                .eq("user_uid", userId);
+
+              if (updErr) {
+                resolve({
+                  value: null,
+                  error: {
+                    message: updErr.message,
+                    code: updErr.code ?? "update_failed",
+                  },
+                });
+                return;
+              }
+            } else {
+              // Insert
+              const { error: insErr } = await Supabase.client
+                .from("metadata")
+                .insert({ user_uid: userId, data: merged });
+
+              if (insErr) {
+                resolve({
+                  value: null,
+                  error: {
+                    message: insErr.message,
+                    code: insErr.code ?? "insert_failed",
+                  },
+                });
+                return;
+              }
+            }
+
+            // Success
+            resolve({ value: true, error: null });
+          } catch (e) {
+            resolve({
+              value: null,
+              error: {
+                message: e instanceof Error ? e.message : String(e),
+                code: 500,
+              },
+            });
+          }
+        });
     });
-
-    if (error) {
-      console.error("[SB] error updating '", key, "' with data", value);
-      return {
-        value: null,
-        error: {
-          message: error.message,
-          code: error.name ?? "update_failed",
-        },
-      };
-    }
-    console.log("[SB] updated '", key, "' with data", value);
-    // Update cached user if available
-    if (SB.cachedUser) {
-      SB.cachedUser = {
-        ...SB.cachedUser,
-        user_metadata: {
-          ...SB.cachedUser.user_metadata,
-          [key]: value,
-        },
-      };
-      SB.cachedUserTimestamp = Date.now();
-    }
-
-    return { value: true, error: null };
   }
 
   static async updateTransaction(
@@ -137,6 +189,7 @@ export class SB extends Supabase {
       .update(transaction)
       .eq("user_id", user.value.id)
       .eq("id", transaction.id);
+
     if (result.error) {
       return {
         value: null,
@@ -434,9 +487,11 @@ export class SB extends Supabase {
 
   static async convertTx(
     tx: Transaction,
-    targetCode: CurrencyCode,
+    targetCode?: CurrencyCode,
   ): Promise<FReturn<Transaction>> {
     Supabase.ensureInitialized();
+
+    targetCode = targetCode ?? (await SB.getBaseCurrency());
 
     if (tx.currency_code === targetCode) {
       return { value: tx, error: null };
@@ -570,6 +625,7 @@ export class SB extends Supabase {
 
     return resultPromise;
   }
+
   static async getBaseCurrency(): Promise<CurrencyCode> {
     Supabase.ensureInitialized();
 

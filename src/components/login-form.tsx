@@ -76,7 +76,9 @@ export function LoginForm({
                       </Link>
                     </>,
                   );
-                  window.location.href = result.value.redirectTo;
+                  setTimeout(() => {
+                    window.location.href = result.value.redirectTo!;
+                  }, 500);
                 }
               }
               setIsLoading(false);

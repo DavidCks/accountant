@@ -143,12 +143,21 @@ const ResumeForm: FC = () => {
   useEffectOnce(() => {
     ResumeController.init();
   }, []);
+  const importFileRef = useRef<HTMLInputElement>(null);
 
   const data$ = ResumeController.state.data;
   const buffer$ = ResumeController.state.dataBuffer;
 
   const onSave = () => ResumeController.applyBuffer();
   const onReset = () => buffer$.set(data$.peek());
+  const onExport = () => ResumeController.export();
+  const onImport = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      await ResumeController.import(file);
+    }
+    e.target.value = "";
+  };
 
   const isSaving = ResumeController.use("isLoading");
 
@@ -156,7 +165,27 @@ const ResumeForm: FC = () => {
     <form className="space-y-8">
       {/* Header actions */}
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold tracking-tight">Resume Form</h2>
+        <h2 className="text-xl font-semibold tracking-tight flex flex-row gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => importFileRef.current?.click()}
+          >
+            Import
+          </Button>
+
+          <Button type="button" onClick={onExport}>
+            Export
+          </Button>
+
+          <input
+            type="file"
+            accept="application/json,.json"
+            className="hidden"
+            ref={importFileRef}
+            onChange={(e) => onImport(e)}
+          />
+        </h2>
         <div className="flex gap-2">
           <Loader2
             className={cn(

@@ -7,8 +7,10 @@ import {
 } from "@/components/ui/accordion";
 import ResumeTemplate from "./resume-template";
 import ResumeForm from "./resume-form";
+import { ResumeController } from "./resume-controller";
 
 const ResumeAccordion: FC = () => {
+  const cvdata = ResumeController.use("data");
   return (
     <Accordion
       type="single"
@@ -20,7 +22,7 @@ const ResumeAccordion: FC = () => {
         <AccordionTrigger>Resume</AccordionTrigger>
         <AccordionContent className="grid xl:grid-cols-2 grid-cols-1 gap-4 text-balance">
           <ResumeForm />
-          <ResumeTemplate />
+          <ResumeTemplate cvdata={cvdata} />
         </AccordionContent>
       </AccordionItem>
     </Accordion>

@@ -42,14 +42,35 @@ class ResumeControllerBase {
       });
     }
     ResumeControllerBase.userPromise = SB.getCurrentUser();
-    ResumeControllerBase.userPromise.then((user) => {
+    ResumeControllerBase.userPromise.then(async (user) => {
       if (user.value) {
         ResumeControllerBase.user = user.value;
-        const remote = user.value.user_metadata?.cv_data as string | null;
-        // const remote = user.value.user_metadata?.cv_data as string | null;
+        // fetch metadata row for this user
+        const { data: metaRow, error: metaErr } = await SB.client
+          .from("metadata")
+          .select("data")
+          .eq("user_uid", user.value.id)
+          .maybeSingle();
+
+        if (metaErr) {
+          console.warn("[metadata] fetch error:", metaErr.message);
+        }
+
+        // read cv_data from metadata.data.cv_data (can be object or stringified JSON)
+        let remote: any = null;
+        const raw = metaRow?.data?.cv_data;
+        if (raw != null) {
+          try {
+            remote = typeof raw === "string" ? JSON.parse(raw) : raw;
+          } catch (e) {
+            console.warn("[metadata] failed to parse cv_data:", e);
+          }
+        }
+
         const next = {
           ...(cvDataCache ?? {}),
-          ...(remote ? JSON.parse(remote) : {}),
+          ...(remote ?? {}),
+          imageUri: cvDataCache?.imageUri ?? "",
         } as CVDataType;
 
         if (next) {
@@ -113,10 +134,83 @@ class ResumeControllerBase {
     });
   }
 
+  public static getDenseResume(): string {
+    const data = ResumeControllerBase.state.data.peek();
+    return (
+      `workTitle: ${data.workTitle}\n` +
+      `tagLine: ${data.tagLine}\n` +
+      `subTagline: ${data.subTagLine}\n` +
+      `story: ${data.story}` +
+      `workExperience: ` +
+      data.workExperience
+        .map((w) => {
+          return w.details
+            .map((d) => {
+              return d.description;
+            })
+            .join("\n");
+        })
+        .join("\n") +
+      `projects: \n` +
+      data.projects
+        .map((w) => {
+          return `${w.title}\n` + `details: ${w.details}\n` + `${w.technology}`;
+        })
+        .join("\n") +
+      `skills: \n` +
+      Object.entries(data.skills)
+        .map((o) => {
+          return `${o[0]}: ${o[1].description}; ${o[1].technology}`;
+        })
+        .join("\n")
+    );
+  }
+
   public static applyBuffer() {
     ResumeControllerBase.set({
       data: ResumeControllerBase.state.dataBuffer.peek(),
     });
+  }
+
+  public static export() {
+    const data = ResumeControllerBase.state.dataBuffer.peek();
+    const json = JSON.stringify(data, null, 2);
+    const blob = new Blob([json], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "cv_data.json";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  public static import(file: File) {
+    const importPromise = new Promise<void>((resolve, reject) => {
+      if (file.type !== "application/json" && !file.name.endsWith(".json")) {
+        alert("Please select a .json file");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const text = String(reader.result || "");
+          const parsed = JSON.parse(text);
+          // Very light validation to avoid obvious mistakes
+          if (typeof parsed !== "object" || parsed === null) {
+            throw new Error("Invalid structure");
+          }
+          ResumeControllerBase.set({ data: parsed, dataBuffer: parsed });
+          resolve();
+        } catch (err) {
+          console.error(err);
+          reject("Invalid JSON file.");
+        }
+      };
+      reader.readAsText(file);
+    });
+    return importPromise;
   }
 }
 
