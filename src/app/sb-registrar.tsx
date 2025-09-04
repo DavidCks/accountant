@@ -2,13 +2,11 @@
 import { useEffectOnce } from "@legendapp/state/react";
 import { FC } from "react";
 import { Supabase } from "@/lib/__supabase__/supabase";
+import { SB } from "./_accountant-supabase_/client";
 
 const SBRegistrar: FC = () => {
   useEffectOnce(() => {
-    Supabase.configure(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    );
+    Supabase.configure(SB.anonUrl, SB.anonKey);
     Supabase.ensureInitialized();
   }, []);
   return <div></div>;
